@@ -1,4 +1,13 @@
 #################
+## Dart
+#################
+
+packages
+web/out
+pubspec.lock
+.buildlog
+
+#################
 ## Eclipse
 #################
 
