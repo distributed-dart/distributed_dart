@@ -1,4 +1,17 @@
 #################
+## Dart
+#################
+
+web/out
+pubspec.lock
+.buildlog
+*.dart.js
+*.dart.js.map
+*.dart.js.deps
+pubspec.lock
+packages/
+
+#################
 ## Eclipse
 #################
 
