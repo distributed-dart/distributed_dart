@@ -25,6 +25,6 @@ for f in ${run[@]}; do
     fi
     echo " > $f"
     dart $f &>> $logfile &
-    $! >> $pidfile
+    echo $! >> $pidfile
 done
 echo "done"
