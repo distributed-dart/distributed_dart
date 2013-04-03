@@ -1,10 +1,13 @@
 #!/bin/bash
 
+## start these processes 
+run=(
+    example/runme.dart 
+)
+
 basedir="$(readlink -f `dirname "$0"`/..)"
 pidfile=/tmp/distributed_dart.pid
 logfile=/tmp/distributed_dart.log
-run=(example/runme_one.dart example/runme_two.dart)
-
 touch $pidfile
 echo "kill running processes"
 for pid in `cat $pidfile`; do 
