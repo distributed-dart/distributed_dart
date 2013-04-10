@@ -1,19 +1,24 @@
 import 'dart:io';
 import 'dart:async';
 import 'dart:isolate';
+import 'dart:json' as json;
 
 
 /**
   * encode string with header
   * format: "inputstring" -> "11,inputstring"
   */
-String encode(String input) => "${input.length},$input";
+String encode(var input){
+  var js = json.stringify(input);
+  return "${js.length},$js";
+}
 
 /**
   * split string to a list of strings, according to string headers
   */
-List<String> decode(String input){
-  var regex = new RegExp(r'([0-9]+),(.*)',multiLine:true);
+List decode(String input){
+  // match group 1 is string length, match group 2 is the rest of the string
+  var regex = new RegExp(r'^([0-9]+),(.*)',multiLine:true);
   var output = new List();
   while (regex.hasMatch(input)) {
     var match = regex.firstMatch(input);
@@ -21,7 +26,11 @@ List<String> decode(String input){
     String tail = match.group(2);
     String data = tail.slice(0,size);
     input = tail.slice(size);
-    output.add(data);
+    try {
+      output.add(json.parse(data));
+    } on FormatException catch(e) {
+      stderr.add("decode: $e");
+    }
   }
   return output;
 }
@@ -33,7 +42,7 @@ _onConnection(Socket conn){
   _onData(data){
     data = new String.fromCharCodes(data);
     for(String s in decode(data)){
-      print(s);
+      print("${s.runtimeType} : $s");
     }
   }
   conn.listen(_onData, onError: _onError, onDone: _onDone);
@@ -57,8 +66,13 @@ startServer(){
   * TODO: refactor into proxy module
   */
 IsolateSink spawnRemote(String lib){
-  var buffer = new List();
-  var bufferstream = new Stream.fromIterable(buffer).map(encode);
+
+  // by subscribing to the stream, and pausing it, data written to the 
+  // sink before the socket is connected is buffered, 
+  // Hack, because we dont have a socket object until the connect()
+  // future completes. we use a null socket, in the stream listener, 
+  // which is assigned to a concrete socket when the connection is 
+  // established. This is possible because the stream is paused.
   var box = new MessageBox();
   Socket socket = null;
   var untilSignal = new Completer();
@@ -68,6 +82,7 @@ IsolateSink spawnRemote(String lib){
 
   Socket.connect('127.0.0.1',12345)
     .then((s){
+        // assign socket, and unpause stream
         socket = s;
         untilSignal.complete();
     });
@@ -79,6 +94,6 @@ main(){
   startServer();
   var remote = spawnRemote("not_implemented");
   for(int i = 0; i < 10; i++){
-    remote.add("abc${i}def");
+    remote.add({'msg': 'hello', 'id': i});
   }
 }
