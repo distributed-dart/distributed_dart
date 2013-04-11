@@ -1,63 +1,80 @@
-import 'dart:io';
-import 'dart:async';
-import 'dart:isolate';
-import 'dart:json' as json;
+part of distributed_dart;
+_decoder(){
+  int remaining = -1;
+  List<int> obj = [];
 
+  _decode(Uint8List data,EventSink<List<int>> sink){
+    var idx = 0;
+    var dataView = new ByteData.view(data.buffer);
+    _log("received ${data.length} bytes");
+    
+    while (idx < data.length) {
+      // prepare to read a new object
+      if(remaining == -1 ){
+        remaining = dataView.getUint64(idx);
+        idx+=8;
+        obj = new List();
+        _log(" > header: ${data.sublist(0,8)} -> size: $remaining bytes");
+      }
 
-/**
-  * encode string with header
-  * format: "inputstring" -> "11,inputstring"
-  */
-String encode(var input){
-  var js = json.stringify(input);
-  return "${js.length},$js";
-}
+      // try to get the entire object first
+      // if the data is incomplete, add data to buffer, and ajust remaining
+      List objpart = [];
+      try {
+        objpart = data.sublist(idx,idx+remaining);
+      } 
+      catch (e) {
+        objpart = data.sublist(idx); // sublist from index to end
+      } 
+      finally {
+        remaining -= objpart.length;
+        idx += objpart.length;
+        obj.addAll(objpart);
+        _log(" > read ${objpart.length} bytes");
+      }
 
-/**
-  * split string to a list of strings, according to string headers
-  */
-List decode(String input){
-  // match group 1 is string length, match group 2 is the rest of the string
-  var regex = new RegExp(r'^([0-9]+),(.*)',multiLine:true);
-  var output = new List();
-  while (regex.hasMatch(input)) {
-    var match = regex.firstMatch(input);
-    int  size = int.parse(match.group(1),radix:10);
-    String tail = match.group(2);
-    String data = tail.slice(0,size);
-    input = tail.slice(size);
-    try {
-      output.add(json.parse(data));
-    } on FormatException catch(e) {
-      stderr.add("decode: $e");
+      // object is assembled, write to sink, and mark that we are ready to
+      // read the next object.
+      if( remaining == 0) {
+        sink.add(obj);
+        remaining = -1;
+        _log(" > done: total ${obj.length} bytes");
+      }
     }
   }
-  return output;
-}
-
-_onError(e) =>  print("Error: $e");
-_onDone() =>  print("Done");
-
-_onConnection(Socket conn){
-  _onData(data){
-    data = new String.fromCharCodes(data);
-    for(String s in decode(data)){
-      print("${s.runtimeType} : $s");
-    }
-  }
-  conn.listen(_onData, onError: _onError, onDone: _onDone);
+  return new StreamTransformer(handleData: _decode);
 }
 
 /**
   * Start server
+  * TODO: add a handler to 
   */
 startServer(){
-  ServerSocket.bind('0.0.0.0',12345).then((serversocket){
-      serversocket.listen(
-        _onConnection,
-        onError: _onError, 
-        onDone: _onDone);
-      });
+  _onConnection(Socket client){
+    // Placeholder handler
+    messageHandler(var msg){
+      _log("Received object of type ${msg.runtimeType}");
+      if (msg is List)  _log(" > size: ${msg.length}");
+      if (msg is String){
+        msg = (msg.length > 70) ? "${msg.slice(0,70)}..." : msg;
+        _log(" > ${msg}");
+      }
+    }
+
+    var _from_json = new StreamTransformer(
+        handleData: (d,s) => s.add(parse(d)));
+
+    client
+      .transform(_decoder())
+      .transform(new StringDecoder())
+      .transform(_from_json)
+      .listen(messageHandler);
+  }
+
+  ServerSocket.bind('0.0.0.0',12345).then(
+      (serversocket) => serversocket.listen(
+          _onConnection,
+          onError: (e) => _err("ServerSocket Error: $e")));
 }
 
 /**
@@ -76,8 +93,24 @@ IsolateSink spawnRemote(String lib){
   var box = new MessageBox();
   Socket socket = null;
   var untilSignal = new Completer();
-  box.stream.map(encode)
-    .listen((d) => socket.write(d))
+
+  var  _to_json = new StreamTransformer(
+      handleData: (d,s) => s.add(stringify(d)));
+
+  var _addHeader = new StreamTransformer(
+      handleData: (d,s) {
+        var size = new Uint8List(8);
+        new ByteData.view(size.buffer).setUint64(0,d.length);
+        _log("add header: ${d.length} -> $size");
+        s.add(size);
+        s.add(d);
+        });
+
+  box.stream
+    .transform(_to_json)
+    .transform(new StringEncoder())
+    .transform(_addHeader)
+    .listen((d) => socket.writeBytes(d))
     .pause(untilSignal.future);
 
   Socket.connect('127.0.0.1',12345)
@@ -89,11 +122,3 @@ IsolateSink spawnRemote(String lib){
   return box.sink;
 }
 
-// test
-main(){
-  startServer();
-  var remote = spawnRemote("not_implemented");
-  for(int i = 0; i < 10; i++){
-    remote.add({'msg': 'hello', 'id': i});
-  }
-}
