@@ -47,6 +47,7 @@ _decoder(){
 
 /**
   * Start server
+  * 
   * TODO: add a handler to 
   */
 startServer(){
@@ -80,6 +81,7 @@ startServer(){
 /**
   * Setup socket connection to serve, and pipe input on stream
   * to socket
+  * 
   * TODO: refactor into proxy module
   */
 IsolateSink spawnRemote(String lib){
