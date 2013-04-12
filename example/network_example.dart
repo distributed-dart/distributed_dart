@@ -1,4 +1,4 @@
-import 'package:distributed_dart/distributed_dart.dart';
+import 'package:distributed_dart/distributed_dart.dart' as dist;
 import 'dart:math';
 
 
@@ -11,9 +11,9 @@ import 'dart:math';
   * split them into more than one. This is also remedied in this module.
   */
 main(){
-  Logging = true;
-  startServer();
-  var remote = spawnRemote("not_implemented");
+  dist.logging = true;
+  dist.startServer();
+  var remote = dist.spawnRemote("not_implemented");
 
   var r = new Random();
   var huge_random_list = new List.generate(
