@@ -19,5 +19,5 @@ part 'src/network/network.dart';
  */
 bool logging = false;
 
-_log(var msg) => logging ? stdout.write("DIST_DART, log: ${msg}\n") : "";
-_err(var msg) => logging ? stderr.write("DIST_DART, err: ${msg}\n") : "";
+_log(var msg) => logging ? stdout.writeln("DIST_DART, log: ${msg}") : "";
+_err(var msg) => logging ? stderr.writeln("DIST_DART, err: ${msg}") : "";
