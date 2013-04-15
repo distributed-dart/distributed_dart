@@ -95,20 +95,26 @@ class Scanner {
     
     // BEGIN: Keyword check (we only need: import, part, export
     String keyword = state.toString();
-    _log("Keyword or identifier -> $keyword");
-    if (keyword == "import" || keyword == "part" || keyword == "export") {
-      _log("Is keyword");
+    if (keyword == "import" || 
+        keyword == "part" || 
+        keyword == "export" ||
+        keyword == "as") {
+      
+      _log("'$keyword' is a keyword!");
       
       nextTokenIsImportant = true;
       return next;
     } else {
-      _log("Is identifier");
+      _log("'$keyword' is an identifier!");
       /* This is not a keyword but an identifier. Because identifiers is not
        * allowed before an import, export or part statement we can assume we are
        * finised.
        */
-      nextTokenIsImportant = false;
-      return _U.$EOF;
+      if (nextTokenIsImportant) {
+        return next;
+      } else {
+        return _U.$EOF;  
+      }
     }
     // END: Keyword check
   }
