@@ -26,7 +26,7 @@ class Scanner {
   
   int advance() => bytes[++byteOffset];
   
-  DartCode scan() {
+  void scan() {
     _log("Running scan()");
     int next = advance();
     while (!identical(next, _U.$EOF)) {
@@ -67,7 +67,7 @@ class Scanner {
     }
     
     // We only need to check for chars we find important.
-    return 1; // Ignore and get next char
+    return advance(); // Ignore and get next char
   }
   
   int tokenizeRawStringKeywordOrIdentifier(int next) {
@@ -286,7 +286,7 @@ class Scanner {
   String utf8String(int start, int offset) {
     _log("Running utf8String($start, $offset)");
     
-    return new String.fromCharCodes(bytes.sublist(start,byteOffset-start+1));
+    return new String.fromCharCodes(bytes.sublist(start,byteOffset+offset+1));
   }
   
   int error(String message) {
@@ -298,13 +298,11 @@ class Scanner {
   int appendPath(String path, int returnValueIfAppended) {
     _log("Running appendPath($path, $returnValueIfAppended)");
     
-    nextTokenIsImportant = false;
     if (nextTokenIsImportant) {
       paths.add(path);
-      return returnValueIfAppended;
-    } else {
-      return _U.$EOF;
+      nextTokenIsImportant = false;
     }
+    return returnValueIfAppended;
   }
   
   void appendComment() {

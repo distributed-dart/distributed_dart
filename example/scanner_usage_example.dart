@@ -16,13 +16,13 @@ void main() {
     
     Runes r = (new String.fromCharCodes(filecontent)).runes;
     
-    r.forEach((int a) {
-      print(new String.fromCharCode(a));
-    });
+//    r.forEach((int a) {
+//      print(new String.fromCharCode(a));
+//    });
     
     Scanner s = new Scanner(r);
     s.scan();
     s.paths.forEach((e) => print(e));
-    print(s.byteOffset);
+    //print(s.byteOffset);
   });
 }
