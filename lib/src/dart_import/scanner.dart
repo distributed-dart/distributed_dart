@@ -6,7 +6,7 @@ part of distributed_dart;
  * Highly inspired of the Dart projects own scanner.
  */
 class Scanner {
-  List<String> bytes;
+  List<int> bytes;
   int byteOffset = -1;
   List<String> paths = new List<String>();
   
