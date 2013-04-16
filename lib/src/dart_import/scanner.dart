@@ -97,6 +97,7 @@ class Scanner {
     String keyword = state.toString();
     if (keyword == "import" || 
         keyword == "part" || 
+        keyword == "library" ||
         keyword == "export" ||
         keyword == "as") {
       
@@ -105,11 +106,12 @@ class Scanner {
       nextTokenIsImportant = true;
       return next;
     } else {
-      _log("'$keyword' is an identifier!");
       /* This is not a keyword but an identifier. Because identifiers is not
        * allowed before an import, export or part statement we can assume we are
-       * finised.
+       * finish.
        */
+      _log("'$keyword' is an identifier!");
+      
       if (nextTokenIsImportant) {
         return next;
       } else {

@@ -9,7 +9,7 @@ import "dart:io";
 import "dart:crypto";
 
 void main() {
-  File f = new File.fromPath(new Path("example/scanner_usage_example.dart"));
+  File f = new File.fromPath(new Path("lib/distributed_dart.dart"));
   
   dist.logging = true;
   
