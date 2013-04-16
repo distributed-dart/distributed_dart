@@ -2,9 +2,11 @@ part of distributed_dart;
 
 /**
  * Simple scanner implementation to scan for imports and comments in Dart files.
+ * 
+ * Highly inspired of the Dart projects own scanner.
  */
 class Scanner {
-  List<int> bytes;
+  List<String> bytes;
   int byteOffset = -1;
   List<String> paths = new List<String>();
   
