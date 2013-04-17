@@ -112,7 +112,7 @@ IsolateSink spawnRemote(String lib){
     .transform(_to_json)
     .transform(new StringEncoder())
     .transform(_addHeader)
-    .listen((d) => socket.writeBytes(d))
+    .listen((d) => socket.add(d))
     .pause(untilSignal.future);
 
   Socket.connect('127.0.0.1',12345)
