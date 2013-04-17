@@ -9,7 +9,7 @@ class DartCode {
   
   String get sourceAsString {
     StringBuffer sb = new StringBuffer();
-    dependencies.forEach((e) => sb.writeCharCode(e));
+    source.forEach((e) => sb.writeCharCode(e));
     return sb.toString();
   }
 }
