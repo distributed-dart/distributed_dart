@@ -57,7 +57,7 @@ startServer(){
       _log("Received object of type ${msg.runtimeType}");
       if (msg is List)  _log(" > size: ${msg.length}");
       if (msg is String){
-        msg = (msg.length > 70) ? "${msg.slice(0,70)}..." : msg;
+        msg = (msg.length > 70) ? "${msg.substring(0,70)}..." : msg;
         _log(" > ${msg}");
       }
     }
