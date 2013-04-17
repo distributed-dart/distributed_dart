@@ -6,7 +6,8 @@ import 'dart:json';
 import 'dart:typeddata';
 
 part 'src/dart_import/util/characters.dart';
-//part 'src/dart_import/dart_code.dart';
+part 'src/dart_import/dart_code.dart';
+part 'src/dart_import/dart_code_db.dart';
 part 'src/dart_import/scanner.dart';
 
 part 'src/network/network.dart';
