@@ -1,9 +1,47 @@
 part of distributed_dart;
-_decoder(){
+
+// Mock Classes, will be added later ------------------------------------------
+// ----------------------------------------------------------------------------
+class DartCode {
+  String name = "libname";
+  String hash = "7576f7rd";
+  String basedir = "/path/to/library";
+  Map<String,String> files = { 
+    '657de657f' : 'src/somefile.dart', 
+    '6579e43f' : 'src/module/anotherfile.dart'
+  };
+  DartCode(this.name, this.hash, this.basedir, this.files);
+  DartCode._dummy();
+}
+
+class SourceLibrary{
+  static Future<DartCode> lookup({String uri, String hash}){
+    return new Future.value(new DartCode._dummy());
+  }
+}
+
+
+// Stream Transformers --------------------------------------------------------
+// ----------------------------------------------------------------------------
+
+// Prefixes a the bytelist object with the size of the json string
+// size prefixe is a 64 bit integer, encoded as Uint8List(8)
+class ByteListEncoder extends StreamEventTransformer {
+    void handleData (Uint8List data, EventSink sink) {
+      var size = new Uint8List(8);
+      new ByteData.view(size.buffer).setUint64(0,data.length);
+      _log("add header: ${data.length} -> $size");
+      sink.add(size);
+      sink.add(data);
+    }
+}
+
+// split concatinated objects, or assemble larger objects which has been split 
+class ByteListDecoder extends StreamEventTransformer {
   int remaining = -1;
   List<int> obj = [];
 
-  _decode(Uint8List data,EventSink<List<int>> sink){
+  void handleData(Uint8List data,EventSink<List<int>> sink){
     var idx = 0;
     var dataView = new ByteData.view(data.buffer);
     _log("received ${data.length} bytes");
@@ -42,85 +80,190 @@ _decoder(){
       }
     }
   }
-  return new StreamTransformer(handleData: _decode);
 }
 
-/**
-  * Start server
-  * 
-  * TODO: add a handler to 
-  */
-startServer(){
-  _onConnection(Socket client){
-    // Placeholder handler
-    messageHandler(var msg){
-      _log("Received object of type ${msg.runtimeType}");
-      if (msg is List)  _log(" > size: ${msg.length}");
-      if (msg is String){
-        msg = (msg.length > 70) ? "${msg.substring(0,70)}..." : msg;
-        _log(" > ${msg}");
-      }
+class JsonEncoder extends StreamEventTransformer <dynamic,String> {
+  void handleData(dynamic data, EventSink<String> sink){
+    sink.add(json.stringify(data));
+  }
+}
+
+class JsonDecoder extends StreamEventTransformer<String, dynamic> {
+  void handleData(String data, EventSink<dynamic> sink){
+    sink.add(json.parse(data));
+  }
+}
+
+class MetadataEncoder extends StreamEventTransformer<dynamic,Map> {
+  Map _metadata;
+  MetadataEncoder(this._metadata) : super();
+
+  void handleData(dynamic data, EventSink<Map> sink){
+    var obj = _metadata;
+    obj['data'] = data;
+    sink.add(obj);
+  }
+}
+
+
+// Network --------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+typedef void MsgHandler(Map msg);
+class MessageHandler {
+  Map<String,List<MsgHandler>> _msgHandlers = {};
+
+  add(String msgtype, MsgHandler handler) {
+    if(! _msgHandlers.containsKey(msgtype)){
+      _msgHandlers[msgtype] = [];
     }
-
-    var _from_json = new StreamTransformer(
-        handleData: (d,s) => s.add(parse(d)));
-
-    client
-      .transform(_decoder())
-      .transform(new StringDecoder())
-      .transform(_from_json)
-      .listen(messageHandler);
+    _msgHandlers[msgtype].add(handler);
   }
 
-  ServerSocket.bind('0.0.0.0',12345).then(
-      (serversocket) => serversocket.listen(
+  // apply message on all handlers that subscribe to it
+  handleMessage(Map message){
+    _msgHandlers.forEach((key, hlist) {
+        if(message.containsKey(key)){
+          hlist.forEach((handler) => handler(message));
+        }
+      });
+  }
+}
+
+class FileServer {
+  static String TYPE = 'getfile';
+  static MsgHandler handler(DartCode lib) {
+    return (request)  => null; // TODO:  reply with file if request is valid file
+  }
+}
+
+class Server {
+  MessageHandler _msghandler = new MessageHandler();
+  static Map ADDR = {'host': '127.0.0.1', 'port':'12345' }; // TODO: fixme
+
+  Server(){
+    ServerSocket.bind('0.0.0.0',12345).then(
+        (serversocket) => serversocket.listen(
           _onConnection,
           onError: (e) => _err("ServerSocket Error: $e")));
+  }
+
+  addHandler(String type, MsgHandler handler) => _msghandler.add(type, handler);
+
+  _onConnection(Socket client){
+    client
+      .transform(new ByteListDecoder())
+      .transform(new StringDecoder())
+      .transform(new JsonDecoder())
+      .listen(_msghandler.handleMessage);
+  }
+
 }
 
-/**
-  * Setup socket connection to serve, and pipe input on stream
-  * to socket
-  * 
-  * TODO: refactor into proxy module
-  */
-IsolateSink spawnRemote(String lib){
+class Network {
+  Socket _socket;
+  Completer _socketReady = new Completer();
+  static Server server = new Server();
+  static Map<String, Network> _instances = {};
 
-  // by subscribing to the stream, and pausing it, data written to the 
-  // sink before the socket is connected is buffered, 
-  // Hack, because we dont have a socket object until the connect()
-  // future completes. we use a null socket, in the stream listener, 
-  // which is assigned to a concrete socket when the connection is 
-  // established. This is possible because the stream is paused.
-  var box = new MessageBox();
-  Socket socket = null;
-  var untilSignal = new Completer();
+  factory Network(String id){
+    var addr = IsolateLookup.whereIs(id);
+    var key = "${addr['host']}:${addr['port']}";
 
-  var  _to_json = new StreamTransformer(
-      handleData: (d,s) => s.add(stringify(d)));
+    if(! _instances.containsKey(key)){
+      _instances[key] = new Network._connect(addr['host'], addr['port']);
+    }
 
-  var _addHeader = new StreamTransformer(
-      handleData: (d,s) {
-        var size = new Uint8List(8);
-        new ByteData.view(size.buffer).setUint64(0,d.length);
-        _log("add header: ${d.length} -> $size");
-        s.add(size);
-        s.add(d);
+    return _instances[key];
+  }
+
+  Network._connect(host,port){
+    Socket.connect(host,port)
+      .then((s) => _socket = s)
+      .then((_) => _socketReady.complete(true));
+  }
+
+  void send(Stream data){
+    stream
+      .transform(new JsonEncoder())
+      .transform(new StringEncoder())
+      .transform(new ByteListEncoder())
+      .listen((d) => _socket.add(d))
+      .pause(_socketReady.future);
+  }
+}
+
+
+// Isolates -------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
+class IsolateLookup {
+  static Map whereIs(String isolateId){
+    return { 'host': '127.0.0.1', 'port' : 12345 };
+  }
+}
+
+// represents a local isolate owned by a remote host
+class LocalIsolate {
+  String _id;
+  SendPort _port;
+
+  static Map<String,LocalIsolate> _instances = {};
+  factory LocalIsolate(id,uri){
+    if(! _instances.containsKey(id)){
+       _instances[id] = new LocalIsolate._(id,uri);
+    }
+    return _instances[id];
+  }
+
+  add(dynamic data) => _port.send(data);
+  LocalIsolate._(this._id,String uri) : _port = spawnUri(uri);
+}
+
+
+// generate unique id for new isolate
+class IsolateId {
+  static int _id = 0;
+  static String hostname = 'myhost';
+  static String get next => "$hostname:${_id++}";
+}
+
+// represents an isolate on a remote host
+class _RemoteIsolate {
+
+  static IsolateSink spawn(String uri){
+    var box = new MessageBox();
+    
+    // setup remote isolate
+    var id = createRemoteIsolate(uri);
+
+    // send incomming data to remote isolate
+    sendData(id, box.stream);
+
+    return box.sink;
+  }
+
+  static String createRemoteIsolate(String uri){
+    // generate id for new isolate
+    String isolateId = IsolateId.next;
+
+    // find all code associated with uri, and setup a local fileserver
+    SourceLibrary.lookup(uri: uri).then((code){
+        Network.server.addHandler(FileServer.TYPE, FileServer.handler(code));
+        var request = { 
+          'spawn' : code.hash, 
+          'id' : isolateId,
+          "${FileServer.TYPE}" : Server.ADDR };
+          // TODO, get available host, and send reequest to spawn isolate
         });
-
-  box.stream
-    .transform(_to_json)
-    .transform(new StringEncoder())
-    .transform(_addHeader)
-    .listen((d) => socket.add(d))
-    .pause(untilSignal.future);
-
-  Socket.connect('127.0.0.1',12345)
-    .then((s){
-        // assign socket, and unpause stream
-        socket = s;
-        untilSignal.complete();
-    });
-  return box.sink;
+    return isolateId;;
+  }
+ 
+  static void sendData(id, Stream stream){
+    var network = new Network(id);
+    stream
+      .transform(new MetadataEncoder({'isolateid' : id}))
+      .listen(network.send);
+  }
 }
 
+IsolateSink SpawnUriRemote(String uri) => _RemoteIsolate.spawn(uri);
