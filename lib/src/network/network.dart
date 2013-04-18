@@ -63,7 +63,7 @@ startServer(){
     }
 
     var _from_json = new StreamTransformer(
-        handleData: (d,s) => s.add(parse(d)));
+        handleData: (d,s) => s.add(json.parse(d)));
 
     client
       .transform(_decoder())
@@ -97,7 +97,7 @@ IsolateSink spawnRemote(String lib){
   var untilSignal = new Completer();
 
   var  _to_json = new StreamTransformer(
-      handleData: (d,s) => s.add(stringify(d)));
+      handleData: (d,s) => s.add(json.stringify(d)));
 
   var _addHeader = new StreamTransformer(
       handleData: (d,s) {
