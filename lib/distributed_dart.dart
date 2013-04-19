@@ -2,7 +2,7 @@ library distributed_dart;
 import 'dart:io';
 import 'dart:async';
 import 'dart:isolate';
-import 'dart:json';
+import 'dart:json' as json;
 import 'dart:typeddata';
 
 part 'src/dart_import/util/characters.dart';
