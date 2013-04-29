@@ -13,7 +13,7 @@ main(){
             int i = 0;
             ws.listen((data) {
               print("received: $data");
-              ws.send("${i++}: $data");
+              ws.add("${i++}: $data");
               if( i > 10) ws.close();
               });
             });
