@@ -3,7 +3,8 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:isolate';
 import 'dart:json' as json;
-import 'dart:typeddata';
+import 'dart:typed_data';
+import 'dart:crypto';
 
 part 'src/dart_import/util/characters.dart';
 part 'src/dart_import/dart_code.dart';
