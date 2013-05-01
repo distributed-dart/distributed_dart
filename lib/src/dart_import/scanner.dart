@@ -1,14 +1,14 @@
 part of distributed_dart;
 
 /**
- * Simple scanner implementation to scan for imports and comments in Dart files.
+ * Simple scanner implementation to scan for dependencies in Dart files.
  * 
  * Highly inspired of the Dart projects own scanner.
  */
 class Scanner {
   List<int> bytes;
-  int byteOffset = -1;
-  List<String> paths = new List<String>();
+  int byteOffset;
+  List<String> dependencies;
   
   /* This is a primitive way to simulate token system. Because we only need to 
    * know if the next string is an import, export or part operation is should 
@@ -28,13 +28,19 @@ class Scanner {
   
   int advance() => bytes[++byteOffset];
   
-  void scan() {
+  List<String> getDependencies() {
+    // Reset scanner instance
+    dependencies = new List<String>();
+    byteOffset = -1;
+    
     _log("Running scan()");
     int next = advance();
     while (!identical(next, _U.$EOF)) {
       next = bigSwitch(next);
       _log("bigSwich output = $next");
     }
+    
+    return dependencies;
   }
   
   int bigSwitch(int next) {
@@ -296,20 +302,19 @@ class Scanner {
   String utf8String(int start, int offset) {
     _log("Running utf8String($start, $offset)");
     
-    return new String.fromCharCodes(bytes.sublist(start,byteOffset+offset+1));
+    return new String.fromCharCodes(bytes.sublist(start+1,byteOffset+offset));
   }
   
   int error(String message) {
     _err("Running error($message)");
-    
-    throw message;
+    return _U.$EOF;
   }
   
   int appendPath(String path, int returnValueIfAppended) {
     _log("Running appendPath($path, $returnValueIfAppended)");
     
     if (nextTokenIsImportant) {
-      paths.add(path);
+      dependencies.add(path);
       nextTokenIsImportant = false;
     }
     return returnValueIfAppended;
@@ -317,6 +322,6 @@ class Scanner {
   
   void appendComment() {
     _log("Running appendComment()");
-    // Do Nothing
+    // Comments is not important for us so just ignore.
   }
 }
