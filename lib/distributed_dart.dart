@@ -7,9 +7,11 @@ import 'dart:typed_data';
 import 'dart:crypto';
 
 part 'src/dart_import/util/characters.dart';
+part 'src/dart_import/util/tools.dart';
 part 'src/dart_import/dart_code.dart';
 part 'src/dart_import/dart_code_db.dart';
 part 'src/dart_import/scanner.dart';
+part 'src/dart_import/exceptions.dart';
 
 part 'src/network/network.dart';
 
