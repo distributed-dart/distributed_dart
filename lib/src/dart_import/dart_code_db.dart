@@ -12,6 +12,8 @@ class DartCodeDb {
     
     return sourceFile.fullPath().then((String fullPathString) {
       Path path = new Path(fullPathString);
+      Path dir = path.directoryPath;
+      
       Future<DartCode> dartCode;
       
       if (useCache) {
@@ -38,12 +40,24 @@ class DartCodeDb {
         List<String> dependencies = scanner.getDependencies();
         
         // Resolve each dependency to full path (and ignore dart sdk stuff)
+        List<Future<String>> fullPaths = new List<Future<String>>();
+        
         dependencies.forEach((String dependency) {
           if (dependency.startsWith("dart:")) {
             _log("Ignore dependency (part of Dart SDK): $dependency");
           } else {
             _log("Dependency found: $dependency");
+            
+            Path fullFilePath = dir.append(dependency);
+            
+            _log("    Full path is: ${fullFilePath.toString()}");
+            
+            fullPaths.add(new File.fromPath(fullFilePath).fullPath());
           }
+        });
+        
+        Future.wait(fullPaths).then((List<String> list) {
+          list.forEach((x) => print(x));
         });
       });
       
