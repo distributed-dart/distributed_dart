@@ -52,6 +52,6 @@ void main() {
     dist.DartCodeDb db = new dist.DartCodeDb();
     db.getSource(new dist.DartCode("scanner_usage_example.dart", "lib/distributed_dart.dart", checksumint, [])).then((List<int> t) => t.forEach((int x) => print(new String.fromCharCode(x))));
     
-    db.resolve("lib/distributed_dart.dart", useCache:true);
+    db.resolve("example/scanner_usage_example.dart", useCache:true);
   });
 }

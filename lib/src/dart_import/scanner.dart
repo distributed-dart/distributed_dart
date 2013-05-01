@@ -14,7 +14,7 @@ class Scanner {
    * know if the next string is an import, export or part operation is should 
    * be enough.
    */
-  bool nextTokenIsImportant = false;
+  bool nextTokenIsImportant;
   
   Scanner(Runes sourcecode) {
     bytes = sourcecode.toList(growable: false);
@@ -32,6 +32,7 @@ class Scanner {
     // Reset scanner instance
     dependencies = new List<String>();
     byteOffset = -1;
+    nextTokenIsImportant = false;
     
     _log("Running scan()");
     int next = advance();
@@ -55,7 +56,8 @@ class Scanner {
       return next;
     }
     
-    if (_U.$a <= next && next <= _U.$z) {
+    if ((_U.$a <= next && next <= _U.$z) ||
+        (_U.$A <= next && next <= _U.$Z)) {
       if (identical(_U.$r, next)) {
         return tokenizeRawStringKeywordOrIdentifier(next);
       }
@@ -72,6 +74,10 @@ class Scanner {
     
     if (identical(next, _U.$EOF)) {
       return _U.$EOF;
+    }
+    
+    if (identical(next, _U.$SEMICOLON)) {
+      nextTokenIsImportant = false;
     }
     
     // We only need to check for chars we find important.
@@ -96,7 +102,8 @@ class Scanner {
     StringBuffer state = new StringBuffer();
     int start = byteOffset;
     
-    while (_U.$a <= next && next <= _U.$z) {
+    while ((_U.$a <= next && next <= _U.$z) || 
+           (_U.$A <= next && next <= _U.$Z)) {
       state.writeCharCode(next);
       next = advance();
     }
@@ -119,6 +126,7 @@ class Scanner {
        * finish.
        */
       _log("'$keyword' is an identifier!");
+      _log("     and nextTokenIsImportant = $nextTokenIsImportant");
       
       if (nextTokenIsImportant) {
         return next;
@@ -184,7 +192,7 @@ class Scanner {
       }
       next = advance();
     }
-    return appendPath(utf8String(start, 0), advance());
+    return appendPath(utf8String(start + 1, -1), advance());
   }
   
   int tokenizeSlashOrComment(int next) {
@@ -302,7 +310,7 @@ class Scanner {
   String utf8String(int start, int offset) {
     _log("Running utf8String($start, $offset)");
     
-    return new String.fromCharCodes(bytes.sublist(start+1,byteOffset+offset));
+    return new String.fromCharCodes(bytes.sublist(start,byteOffset+offset+1));
   }
   
   int error(String message) {
