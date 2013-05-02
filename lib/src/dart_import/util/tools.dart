@@ -1,19 +1,19 @@
 part of distributed_dart;
 
 /**
- * Used to compare two lists and return true if all elements in each list is
- * the same and the lists is the same size.
+ * Use to compare each element in two lists. Returns [true] if the two lists
+ * is equal size and the elements in the each list is equel:
  */
-bool _compareLists(List<int> hash1, List<int> hash2) {
-  if (hash1 == null || hash2 == null) {
+bool _compareLists(List list1, List list2) {
+  if (list1 == null || list2 == null) {
     return false;
   }
   
-  if (hash1.length != hash2.length) {
+  if (list1.length != list2.length) {
     return false;
   }
-  for (int i = 0; i < hash1.length; i++) {
-    if (hash1[i] != hash2[i]) {
+  for (int i = 0; i < list1.length; i++) {
+    if (list1[i] != list2[i]) {
       return false;
     }
   }
@@ -22,6 +22,7 @@ bool _compareLists(List<int> hash1, List<int> hash2) {
 
 /**
  * Convert a List<int> to a String by read each int and convert to hex values.
+ * Useful for convert a checksum to a String.
  */
 String _hashListToString(List<int> list) {
   StringBuffer sb = new StringBuffer();
