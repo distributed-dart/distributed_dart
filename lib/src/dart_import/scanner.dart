@@ -1,57 +1,76 @@
 part of distributed_dart;
 
 /**
- * Simple scanner implementation to scan for dependencies in Dart files.
+ * Simple scanner implementation to scan for dependencies in Dart files. The
+ * scanner will automatically stop when no more import statements is possible.
+ * More information can be found in the
+ * [Dart Language Specification](http://goo.gl/rhiyX).
  * 
- * Highly inspired of the Dart projects own scanner.
+ * _Highly inspired by the Dart project's own 
+ * [scanner.dart](http://goo.gl/Ut5w7). The main difference is we don't need to
+ * scan for the whole language but only need a small subset. Also we want to
+ * make it easy to get details like import statements directly without need of
+ * parsing tokens._
  */
 class Scanner {
-  List<int> bytes;
-  int byteOffset;
-  List<String> dependencies;
+  List<int> _bytes;
+  int _byteOffset;
+  List<String> _dependencies;
   
   /* This is a primitive way to simulate token system. Because we only need to 
    * know if the next string is an import, export or part operation is should 
    * be enough.
+   * 
+   * If nextTokenIsImportant is true we need to take the next string. Also, if
+   * we find a String and nextTokenIsImportant is false we can stop the scan.
    */
-  bool nextTokenIsImportant;
+  bool _nextTokenIsImportant;
   
+  /**
+   * Create new instance of [Scanner] to parse a instance of [Runes]. The 
+   * instance of [Runes] should contain the content of a syntax valid Dart file.
+   */
   Scanner(Runes sourcecode) {
-    bytes = sourcecode.toList(growable: false);
+    _bytes = sourcecode.toList(growable: false);
   }
   
-  int nextByte() => byteAt(++byteOffset);
-
-  int peek() => byteAt(byteOffset + 1);
-
-  int byteAt(int index) => bytes[index];
-  
-  int advance() => bytes[++byteOffset];
-  
+  /**
+   * Scan instance of [Runes] given on initialization. Returns a list of Strings
+   * where each string is the URI from an import statement. Please notice the
+   * possibility to get URI's like 'dart:async'.
+   */
   List<String> getDependencies() {
-    // Reset scanner instance
-    dependencies = new List<String>();
-    byteOffset = -1;
-    nextTokenIsImportant = false;
+    // Reset scanner instance (if someone want to call getDependencies() twice.
+    _dependencies = new List<String>();
+    _byteOffset = -1;
+    _nextTokenIsImportant = false;
     
-    _log("Running scan()");
-    int next = advance();
+    _log("Running _scan()");
+    int next = _advance();
     while (!identical(next, _U.$EOF)) {
-      next = bigSwitch(next);
+      next = _bigSwitch(next);
       _log("bigSwich output = $next");
     }
     
-    return dependencies;
+    return _dependencies;
   }
   
-  int bigSwitch(int next) {
-    _log("Running bigSwitch($next)");
+  int _nextByte() => _byteAt(++_byteOffset);
+
+  int _peek() => _byteAt(_byteOffset + 1);
+
+  int _byteAt(int index) => _bytes[index];
+  
+  int _advance() => _bytes[++_byteOffset];
+  
+  int _bigSwitch(int next) {
+    _log("Running _bigSwitch($next)");
     if (identical(next, _U.$SPACE) || identical(next, _U.$TAB)
         || identical(next, _U.$LF) || identical(next, _U.$CR)) {
       // Do nothing as we don't collect white space.
-      next = advance();
+      next = _advance();
       while (identical(next, _U.$SPACE)) {
-        next = advance();
+        next = _advance();
       }
       return next;
     }
@@ -59,17 +78,17 @@ class Scanner {
     if ((_U.$a <= next && next <= _U.$z) ||
         (_U.$A <= next && next <= _U.$Z)) {
       if (identical(_U.$r, next)) {
-        return tokenizeRawStringKeywordOrIdentifier(next);
+        return _tokenizeRawStringKeywordOrIdentifier(next);
       }
-      return tokenizeKeywordOrIdentifier(next, true);
+      return _tokenizeKeywordOrIdentifier(next, true);
     }
     
     if (identical(next, _U.$DQ) || identical(next, _U.$SQ)) {
-      return tokenizeString(next, byteOffset, false);
+      return _tokenizeString(next, _byteOffset, false);
     }
     
     if (identical(next, _U.$SLASH)) {
-      return tokenizeSlashOrComment(next);
+      return _tokenizeSlashOrComment(next);
     }
     
     if (identical(next, _U.$EOF)) {
@@ -77,35 +96,35 @@ class Scanner {
     }
     
     if (identical(next, _U.$SEMICOLON)) {
-      nextTokenIsImportant = false;
+      _nextTokenIsImportant = false;
     }
     
     // We only need to check for chars we find important.
-    return advance(); // Ignore and get next char
+    return _advance(); // Ignore and get next char
   }
   
-  int tokenizeRawStringKeywordOrIdentifier(int next) {
-    _log("Running tokenizeRawStringKeywordOrIdentifier($next)");
+  int _tokenizeRawStringKeywordOrIdentifier(int next) {
+    _log("Running _tokenizeRawStringKeywordOrIdentifier($next)");
     
-    int nextnext = peek();
+    int nextnext = _peek();
     if (identical(nextnext, _U.$DQ) || identical(nextnext, _U.$SQ)) {
-      int start = byteOffset;
-      next = advance();
-      return tokenizeString(next, start, true);
+      int start = _byteOffset;
+      next = _advance();
+      return _tokenizeString(next, start, true);
     }
-    return tokenizeKeywordOrIdentifier(next, true);
+    return _tokenizeKeywordOrIdentifier(next, true);
   }
   
-  int tokenizeKeywordOrIdentifier(int next, bool allowDollar) {
-    _log("Running tokenizeKeywordOrIdentifier($next, $allowDollar)");
+  int _tokenizeKeywordOrIdentifier(int next, bool allowDollar) {
+    _log("Running _tokenizeKeywordOrIdentifier($next, $allowDollar)");
     
     StringBuffer state = new StringBuffer();
-    int start = byteOffset;
+    int start = _byteOffset;
     
     while ((_U.$a <= next && next <= _U.$z) || 
            (_U.$A <= next && next <= _U.$Z)) {
       state.writeCharCode(next);
-      next = advance();
+      next = _advance();
     }
     
     // BEGIN: Keyword check (we only need: import, part, export
@@ -118,7 +137,7 @@ class Scanner {
       
       _log("'$keyword' is a keyword!");
       
-      nextTokenIsImportant = true;
+      _nextTokenIsImportant = true;
       return next;
     } else {
       /* This is not a keyword but an identifier. Because identifiers is not
@@ -126,9 +145,9 @@ class Scanner {
        * finish.
        */
       _log("'$keyword' is an identifier!");
-      _log("     and nextTokenIsImportant = $nextTokenIsImportant");
+      _log("     and nextTokenIsImportant = $_nextTokenIsImportant");
       
-      if (nextTokenIsImportant) {
+      if (_nextTokenIsImportant) {
         return next;
       } else {
         return _U.$EOF;  
@@ -137,199 +156,199 @@ class Scanner {
     // END: Keyword check
   }
 
-  int tokenizeString(int next, int start, bool raw) {
-    _log("Running tokenizeString($next, $start, $raw)");
+  int _tokenizeString(int next, int start, bool raw) {
+    _log("Running _tokenizeString($next, $start, $raw)");
     
     int quoteChar = next;
-    next = advance();
+    next = _advance();
     if (identical(quoteChar, next)) {
-      next = advance();
+      next = _advance();
       if (identical(quoteChar, next)) {
         // Multiline string.
-        return tokenizeMultiLineString(quoteChar, start, raw);
+        return _tokenizeMultiLineString(quoteChar, start, raw);
       } else {
         // Empty string.
-        return appendPath(utf8String(start, -1), next);
+        return _appendPath(_utf8String(start, -1), next);
       }
     }
     if (raw) {
-      return tokenizeSingleLineRawString(next, quoteChar, start);
+      return _tokenizeSingleLineRawString(next, quoteChar, start);
     } else {
-      return tokenizeSingleLineString(next, quoteChar, start);
+      return _tokenizeSingleLineString(next, quoteChar, start);
     }
   }
   
-  int tokenizeSingleLineRawString(int next, int quoteChar, int start) {
-    _log("Running tokenizeSingleLineRawString($next, $quoteChar, $start)");
+  int _tokenizeSingleLineRawString(int next, int quoteChar, int start) {
+    _log("Running _tokenizeSingleLineRawString($next, $quoteChar, $start)");
     
-    next = advance();
+    next = _advance();
     while (next != _U.$EOF) {
       if (identical(next, quoteChar)) {
-        return appendPath(utf8String(start, 0), advance());
+        return _appendPath(_utf8String(start, 0), _advance());
       } else if (identical(next, _U.$LF) || identical(next, _U.$CR)) {
-        return error("unterminated string literal");
+        return _error("unterminated string literal");
       }
-      next = advance();
+      next = _advance();
     }
-    return error("unterminated string literal");
+    return _error("unterminated string literal");
   }
   
-  int tokenizeSingleLineString(int next, int quoteChar, int start) {
-    _log("Running tokenizeSingleLineString($next, $quoteChar, $start)");
+  int _tokenizeSingleLineString(int next, int quoteChar, int start) {
+    _log("Running _tokenizeSingleLineString($next, $quoteChar, $start)");
     
     while (!identical(next, quoteChar)) {
       if (identical(next, _U.$BACKSLASH)) {
-        next = advance();
+        next = _advance();
       } else if (identical(next, _U.$$)) {
         // URI's can't use String Interpolation
-        return error("uri's can't contain string interpolation");
+        return _error("uri's can't contain string interpolation");
       }
       if (next <= _U.$CR
           && (identical(next, _U.$LF) || 
               identical(next, _U.$CR) || 
               identical(next, _U.$EOF))) {
-        return error("unterminated string literal");
+        return _error("unterminated string literal");
       }
-      next = advance();
+      next = _advance();
     }
-    return appendPath(utf8String(start + 1, -1), advance());
+    return _appendPath(_utf8String(start + 1, -1), _advance());
   }
   
-  int tokenizeSlashOrComment(int next) {
-    _log("Running tokenizeSlashOrComment($next)");
+  int _tokenizeSlashOrComment(int next) {
+    _log("Running _tokenizeSlashOrComment($next)");
     
-    next = advance();
+    next = _advance();
     if (identical(_U.$STAR, next)) {
-      return tokenizeMultiLineComment(next);
+      return _tokenizeMultiLineComment(next);
     } else if (identical(_U.$SLASH, next)) {
-      return tokenizeSingleLineComment(next);
+      return _tokenizeSingleLineComment(next);
     } else {
       // The rest of choices is /= and this is not allowed with imports.
       return _U.$EOF;
     }
   }
   
-  int tokenizeMultiLineComment(int next) {
-    _log("Running tokenizeMultiLineComment($next)");
+  int _tokenizeMultiLineComment(int next) {
+    _log("Running _tokenizeMultiLineComment($next)");
     
     int nesting = 1;
-    next = advance();
+    next = _advance();
     while (true) {
       if (identical(_U.$EOF, next)) {
         // TODO(ahe): Report error.
         return next;
       } else if (identical(_U.$STAR, next)) {
-        next = advance();
+        next = _advance();
         if (identical(_U.$SLASH, next)) {
           --nesting;
           if (0 == nesting) {
-            next = advance();
-            appendComment();
+            next = _advance();
+            _appendComment();
             return next;
           } else {
-            next = advance();
+            next = _advance();
           }
         }
       } else if (identical(_U.$SLASH, next)) {
-        next = advance();
+        next = _advance();
         if (identical(_U.$STAR, next)) {
-          next = advance();
+          next = _advance();
           ++nesting;
         }
       } else {
-        next = advance();
+        next = _advance();
       }
     }
   }
   
-  int tokenizeSingleLineComment(int next) {
-    _log("Running tokenizeSingleLineComment($next)");
+  int _tokenizeSingleLineComment(int next) {
+    _log("Running _tokenizeSingleLineComment($next)");
     
     while (true) {
-      next = advance();
+      next = _advance();
       if (identical(_U.$LF, next) || 
           identical(_U.$CR, next) || 
           identical(_U.$EOF, next)) {
-        appendComment();
+        _appendComment();
         return next;
       }
     }
   }
   
-  int tokenizeMultiLineRawString(int quoteChar, int start) {
-    _log("Running tokenizeMultiLineRawString($quoteChar, $start)");
+  int _tokenizeMultiLineRawString(int quoteChar, int start) {
+    _log("Running _tokenizeMultiLineRawString($quoteChar, $start)");
     
-    int next = advance();
+    int next = _advance();
     outer: while (!identical(next, _U.$EOF)) {
       while (!identical(next, quoteChar)) {
-        next = advance();
+        next = _advance();
         if (identical(next, _U.$EOF)) break outer;
       }
-      next = advance();
+      next = _advance();
       if (identical(next, quoteChar)) {
-        next = advance();
+        next = _advance();
         if (identical(next, quoteChar)) {
           // appendByteStringToken(STRING_INFO, utf8String(start, 0));
           // return advance();
-          return appendPath(utf8String(start, 0), advance());
+          return _appendPath(_utf8String(start, 0), _advance());
         }
       }
     }
-    return error("unterminated string literal");
+    return _error("unterminated string literal");
   }
   
-  int tokenizeMultiLineString(int quoteChar, int start, bool raw) {
-    _log("Running tokenizeMultiLineString($quoteChar, $start, $raw)");
+  int _tokenizeMultiLineString(int quoteChar, int start, bool raw) {
+    _log("Running _tokenizeMultiLineString($quoteChar, $start, $raw)");
     
-    if (raw) return tokenizeMultiLineRawString(quoteChar, start);
-    int next = advance();
+    if (raw) return _tokenizeMultiLineRawString(quoteChar, start);
+    int next = _advance();
     while (!identical(next, _U.$EOF)) {
       if (identical(next, _U.$$)) {
-        start = byteOffset;
+        start = _byteOffset;
         continue;
       }
       if (identical(next, quoteChar)) {
-        next = advance();
+        next = _advance();
         if (identical(next, quoteChar)) {
-          next = advance();
+          next = _advance();
           if (identical(next, quoteChar)) {
-            return appendPath(utf8String(start,0), advance());
+            return _appendPath(_utf8String(start,0), _advance());
           }
         }
         continue;
       }
       if (identical(next, _U.$BACKSLASH)) {
-        next = advance();
+        next = _advance();
         if (identical(next, _U.$EOF)) break;
       }
-      next = advance();
+      next = _advance();
     }
-    return error("unterminated string literal");
+    return _error("unterminated string literal");
   }
   
-  String utf8String(int start, int offset) {
-    _log("Running utf8String($start, $offset)");
+  String _utf8String(int start, int offset) {
+    _log("Running _utf8String($start, $offset)");
     
-    return new String.fromCharCodes(bytes.sublist(start,byteOffset+offset+1));
+    return new String.fromCharCodes(_bytes.sublist(start,_byteOffset+offset+1));
   }
   
-  int error(String message) {
-    _err("Running error($message)");
+  int _error(String message) {
+    _err("Running _error($message)");
     return _U.$EOF;
   }
   
-  int appendPath(String path, int returnValueIfAppended) {
-    _log("Running appendPath($path, $returnValueIfAppended)");
+  int _appendPath(String path, int returnValueIfAppended) {
+    _log("Running _appendPath($path, $returnValueIfAppended)");
     
-    if (nextTokenIsImportant) {
-      dependencies.add(path);
-      nextTokenIsImportant = false;
+    if (_nextTokenIsImportant) {
+      _dependencies.add(path);
+      _nextTokenIsImportant = false;
     }
     return returnValueIfAppended;
   }
   
-  void appendComment() {
-    _log("Running appendComment()");
+  void _appendComment() {
+    _log("Running _appendComment()");
     // Comments is not important for us so just ignore.
   }
 }
