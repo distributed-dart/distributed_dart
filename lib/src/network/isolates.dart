@@ -1,99 +1,111 @@
 part of distributed_dart;
 
-// represents a local isolate owned by a remote host
-class LocalIsolate {
-  String _id;
-  SendPort _port;
-
-  static Map<String,LocalIsolate> _instances = {};
-
-  factory LocalIsolate(id){
-    if(! _instances.containsKey(id)){
-      // oh no, isolate is not spawned
-      // TODO: either make a buffer, or throw an exception
-    }
-    return _instances[id];
-  }
-
-  factory LocalIsolate.spawn(id, uri){
-       _instances[id] = new LocalIsolate._(uri);
-  }
-
-  add(dynamic data) => _port.send(data);
-
-  LocalIsolate._(String uri) : _port = spawnUri(uri);
-}
-
-// generate unique id for new isolate
 class IsolateId {
-  static int _id = 0;
+  final String id;
+
+  // generate unique id 
   static String hostname = 'myhost';
-  static String get next => "$hostname:${_id++}";
+  static int _id = 0;
+  static String _nextId(){
+    int timestamp = new DateTime.now().millisecondsSinceEpoch;
+    return "${hostname}:${timestamp}:${_id++}";
+  }
+
+  IsolateId(): id = _nextId();
+  IsolateId._fromId(this.id);
+
+  toString() => id;
+  toJson() => toString();
 }
 
-class SpawnIsolateRequest {
-  final String codehash;
-  final Map fileserver;
-  final string isolateid;
+// Request to spawn new isolate
+class SpawnIsolateRequest implements Request {
+  const int type = RequestType.SpawnIsolate;
+  final IsolateId id;
+  final DartCode code;
 
-  SpawnIsolateRequest(this.hash, this.server, this.isolateid);
+  SpawnIsolateRequest(this.id, this.code);
 
-  toJson() {
-    return {
-      'codehash' : codehash, 
-      'fileserver' : fileserver, 
-      'isolateid': isolateid };
+  SpawnIsolateRequest.fromMap(Map data):
+    this.id = data['id'],
+    this.code = new DartCode.fromMap(data['code']);
+  
+
+  toJson() => { 'type' : type,'code' : code, 'id' : id };
+
+  static void requestHandler(Map request){
+    var r = new SpawnIsolateRequest.fromMap(request);
+    // TODO: 
+    // 1.a) lookup code
+    // 1.b) fetch code if missing
+    // 2) spawn local isolate
+  }
+
+  Stream get stream => new Stream.fromIterable(toJson());
 }
 
-SpawnIsolateHandler extends MessageHandler {
-  static String TYPE = 'SPAWNISOLATE';
-  get String Type = SpawnIsolateHandler.TYPE;
+// metadata for data sent to isolate
+class IsolateDataRequest implements Request {
+  const int type = RequestType.IsolateData;
+  final IsolateId id;
+  final dynamic data;
 
-  void handler(Map msg) {
-    // lookup local code uri, or request it from fileserver
-    SourceLibrary.getUri(msg['codehash'],msg['fileserver'])
-      .then((uri) => new LocalIsolate.spawn((msg['isolateid'], uri));
+  IsolateDataRequest(this.id, this.data);
+  IsolateDataRequest._fromMap(Map m):
+    this.id = m['id'],
+    this.data = m['data'];
+
+  toJson() => { 'type': type, 'id' : id, 'data' : data };
+
+  // StreamTransformer to wrap input data in a IsolateDataRequest
+  static StreamTransformer transform(id){
+    return new StreamTransformer(
+       handleData: (data, sink) => sink.add(new IsolateDataRequest(id, data))
+       );
+  }
+
+  static void requestHandler(Map request){
+    var r = new IsolateDataRequest._fromMap(request);
+    // TODO:
+    // 1. Lookup local isolate id
+    // 2. buffer data if isolate is not created yet
+    // 3. send data to isolate
   }
 }
 
-IsolateDataHandler extends MessageHandler {
-  static String TYPE = 'ISOLATEDATA';
-  get String Type = IsolateDataHandler.TYPE;
-
-  // TODO: add buffer in case data has been sent to an isolate before it was opened
-  void handler(Map msg){
-    LocalIsolate(msg['id']).add(Metadata.getData(msg));
-  }
+createRemoteIsolate(IsolateId id, String uri){
+  var code = new DartCode.dummy(); // TODO: integrate with library lookup: code = lookup(uri);
+  var fs = new FileServer(code);  // TODO: make file server
+  var request = new SpawnIsolateRequest(id, code);
+  new Network.isolateId(id).send(request.stream);
 }
 
-IsolateSink streamSpawnUriRemote(String uri) {
-  sendSpawnRequest(code, host){
-    var code = list[0];
-    var host = list[1];
-    network.connect(host)
-
-    network = new Network(isolateid, host);
-    var spawn_meta = new Metadata(SpawnIsolateHandler.TYPE, {});
-    new Future(new SpawnIsolateRequest(code['hash'], id))
-      .asStream()
-      .transform(spawn_meta)
-      .listen(network.send);
-  }
-
-  // generate id for new isolate
+// PUBLIC API //////////////////////////////////////////////////////////////////////
+/**
+  * Creates and spawns an isolate whose code is available at uri. 
+  * The isolate is spawned on a remote node available in the distributed network.
+  * Returns an IsolateSink feeding into the remote isolate stream
+  */
+IsolateSink streamSpawnUriRemote(String uri){
   var msgbox = new MessageBox();
-  String id = IsolateId.next;
-
-  var isolate_meta  = new Metadata(IsolateDataHandler.TYPE, {'id' : id });
+  var id = new IsolateId();
+  createRemoteIsolate(id, uri);
+  
   msgbox.stream
-    .transform(new MetadataEncoder(metadata))
-    .listen(network.send);
-
-  // request code and remote hostaddr
-  Future code = SourceLibrary.uri(uri);
-  Future remotehost = MasterServer.getHost();
-  Future.wait( [ code, remotehost ])
-    .then((v) => sendSpawnRequest(v[0], v[1]));
+    .transform(IsolateDataRequest.transform(id))
+    .listen(new Network.isolateId(id).send);
 
   return msgbox.sink;
+}
+
+/**
+  * Creates and spawns an isolate whose code is available at uri. 
+  * The isolate is spawned on a remote node available in the distributed network.
+  * Returns a sendport which is linked to the remote isolate ReceivePort
+  */
+SendPort spawnUriRemote(String uri){
+  var sink = streamSpawnUriRemote(uri);
+  var rp = new ReceivePort();
+  rp.receive((data,_) => sink.add(data));
+  return port.toSendPort();
 }

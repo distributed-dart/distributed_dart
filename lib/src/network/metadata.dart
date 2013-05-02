@@ -8,7 +8,7 @@ class MetadataException implements Exception {
 
 class Metadata {
   final String TYPE;
-  final Map META = {};
+  final Map META;
 
   Metadata(this.TYPE, this.META);
 

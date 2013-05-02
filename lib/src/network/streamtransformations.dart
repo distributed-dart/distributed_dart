@@ -1,4 +1,4 @@
-part of distributed_dart
+part of distributed_dart;
 
 // Prefixes a the bytelist object with the size of the json string
 // size prefixe is a 64 bit integer, encoded as Uint8List(8)

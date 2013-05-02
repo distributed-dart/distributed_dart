@@ -9,13 +9,19 @@ class DartCode {
     '6579e43f' : 'src/module/anotherfile.dart'
   };
   DartCode(this.name, this.hash, this.basedir, this.files);
-  DartCode._dummy();
+  DartCode.fromMap(Map dc):
+    this.name = dc['name'], 
+    this.hash = dc['hash'], 
+    this.basedir = dc['basedir'], 
+    this.files = dc['files'];
+  DartCode.dummy();
 }
 
 class SourceLibrary{
   static Future<DartCode> lookup({String uri, String hash}){
-    return new Future.value(new DartCode._dummy());
+    return new Future.value(new DartCode.dummy());
   }
+  static String getUri(String hash, Map server) => "path/to/source.dart";
 }
 
 

@@ -1,37 +1,39 @@
 part of distributed_dart;
 
-abstract class MessageHandler {
-  static String TYPE;
-  abstract get String type
-  void handleMessage(Map msg);
+// Enum like class used by message handlers
+class RequestType {
+  static const int SpawnIsolate = 1;
+  static const int IsolateData = 2;
 }
 
-class MessageObserver {
-  Map<String,List<MessageHandler>> _messageHandlers = {};
+typedef void RequestHandler(Map request);
 
-  append(MessageHandler handler) {
-    if( ! _messageHandlers.containsKey(handler.Type))
-      _messageHandlers[handler.Type] = [];
+abstract class Request {
+  const int type = -1;
+}
 
-    _messageHandlers[handler.Type].add(handler);
+/**
+  * Contains a map with request handlers designed for specific RequestType's 
+  */
+class RequestHandlerList {
+
+  Map<int, List<RequestHandler>> handlers = new Map<int, List<RequestHandler>>();
+  void add(int type, RequestHandler handler) {
+
+    if( ! handlers.containsKey(type)){
+      handlers[type] = [];
+    }
+    handlers[type].add(handler);
   }
 
-  // apply message on all handlers that subscribe to it
-  listen(Map message){
+  runAll(Map req){
     try {
-      var type = Metadata.getType(message);
-    } catch (e){
+      var type = req['type'];
+      handlers[type].forEach((h) => h(req));
+    } catch (e) {
       _err(e);
-      return;
-    }
-
-    if (! _messageHandlers.containsKey(type)){
-      _err("no messagehandler registered for message of type $type");
-      return;
-    }
-    
-    for(MessageHandler h in _messageHandlers[type]){
-      h.handleMessage(message);
     }
   }
 }
+
+
