@@ -13,3 +13,17 @@ class FileChangedException implements Exception {
 
   String toString() => "FileChangedException: $message";
 }
+
+class ScannerException implements Exception {
+  /**
+   * A message describing the error.
+   */
+  final String message;
+
+  /**
+   * Creates a new ScannerException with an optional error [message].
+   */
+  const ScannerException([this.message = ""]);
+
+  String toString() => "ScannerException: $message";
+}

@@ -40,12 +40,13 @@ class Scanner {
    * possibility to get URI's like 'dart:async'.
    */
   List<String> getDependencies() {
+    _log("Running _getDependencies()");
+    
     // Reset scanner instance (if someone want to call getDependencies() twice.
     _dependencies = new List<String>();
     _byteOffset = -1;
     _nextTokenIsImportant = false;
     
-    _log("Running _scan()");
     int next = _advance();
     while (!identical(next, _U.$EOF)) {
       next = _bigSwitch(next);
@@ -127,7 +128,7 @@ class Scanner {
       next = _advance();
     }
     
-    // BEGIN: Keyword check (we only need: import, part, export
+    // BEGIN: Keyword check (we only need: import, part, export, as)
     String keyword = state.toString();
     if (keyword == "import" || 
         keyword == "part" || 
@@ -334,7 +335,7 @@ class Scanner {
   
   int _error(String message) {
     _err("Running _error($message)");
-    return _U.$EOF;
+    throw new ScannerException(message);
   }
   
   int _appendPath(String path, int returnValueIfAppended) {
