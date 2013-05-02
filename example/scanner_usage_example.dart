@@ -50,8 +50,14 @@ void main() {
     print(f.fullPathSync());
     
     dist.DartCodeDb db = new dist.DartCodeDb();
-    db.getSource(new dist.DartCode("scanner_usage_example.dart", "lib/distributed_dart.dart", checksumint, [])).then((List<int> t) => t.forEach((int x) => print(new String.fromCharCode(x))));
+    //db.getSource(new dist.DartCode("scanner_usage_example.dart", "lib/distributed_dart.dart", checksumint, [])).then((List<int> t) => t.forEach((int x) => print(new String.fromCharCode(x))));
     
-    db.resolve("example/scanner_usage_example.dart", useCache:true);
+    db.resolve("example/scanner_usage_example.dart", useCache:true).then((dist.DartCode code) {
+      code.dependencies.forEach((dist.DartCode object) {
+        print(object.path);
+        object.dependencies.forEach((dist.DartCode x) => print(x.fileHashAsString));
+      });
+    });
+    
   });
 }

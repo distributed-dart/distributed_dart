@@ -8,16 +8,18 @@ class DartCodeDb {
   Map<String,Future<List<int>>> _sourceCache = new Map<String,Future<List<int>>>();
   
   Future<DartCode> resolve(String uri, {bool useCache: true} ) {
+    _log("Running resolve($uri, $useCache");
     File sourceFile = new File(uri);
     
     return sourceFile.fullPath().then((String fullPathString) {
       Path path = new Path(fullPathString);
       Path dir = path.directoryPath;
+      Path packageDir = dir.append("packages");
       
       Future<DartCode> dartCode;
       
       if (useCache) {
-        dartCode = _pathToDartCode[path.toString()];
+        dartCode = _pathToDartCode[path.toNativePath()];
         
         if (dartCode != null) {
           return dartCode;
@@ -40,28 +42,32 @@ class DartCodeDb {
         List<String> dependencies = scanner.getDependencies();
         
         // Resolve each dependency to full path (and ignore dart sdk stuff)
-        List<Future<String>> fullPaths = new List<Future<String>>();
-        
-        dependencies.forEach((String dependency) {
-          if (dependency.startsWith("dart:")) {
-            _log("Ignore dependency (part of Dart SDK): $dependency");
+        return Future.wait(dependencies.where((String path) {
+          if (path.startsWith("dart:")) {
+            _log("Ignore dependency (part of Dart SDK): $path");
+            return false;
           } else {
-            _log("Dependency found: $dependency");
-            
-            Path fullFilePath = dir.append(dependency);
-            
-            _log("    Full path is: ${fullFilePath.toString()}");
-            
-            fullPaths.add(new File.fromPath(fullFilePath).fullPath());
+            _log("Dependency found: $path"); 
+            return true;
           }
-        });
-        
-        Future.wait(fullPaths).then((List<String> list) {
-          list.forEach((x) => print(x));
+        }).map((String path) {
+          Path fullFilePath;
+          
+          if (path.startsWith("package:")) {
+            String pathString = path.substring("package:".length);
+            fullFilePath = packageDir.append(pathString);
+          } else {
+            fullFilePath = dir.append(path);
+          }
+          _log("    Full path is: ${fullFilePath.toNativePath()}");
+          
+          return this.resolve(fullFilePath.toNativePath(), useCache:useCache);
+        })).then((List<DartCode> dependencies) {
+          return new DartCode(path.filename, path.toNativePath(), hash, dependencies);
         });
       });
       
-      _pathToDartCode[path.toString()] = dartCode;
+      _pathToDartCode[path.toNativePath()] = dartCode;
       return dartCode;
     });
   }
