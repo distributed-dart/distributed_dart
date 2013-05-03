@@ -32,8 +32,7 @@ class DartCode {
   final List<DartCode> _dependencies;
   
   /// Create DartCode instance. Should only be used by [DartCodeDb].
-  const DartCode(String this.name, String this.path, 
-      List<int> this._hash, List<DartCode> this._dependencies);
+  const DartCode(this.name, this.path, this._hash, this._dependencies);
   
   /// Create DartCode object from JSON String.
   factory DartCode.fromJson(String jsonString) {
