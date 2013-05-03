@@ -28,7 +28,7 @@ class SpawnIsolateRequest implements Request {
 
   SpawnIsolateRequest.fromMap(Map data):
     this.id = data['id'],
-    this.code = new DartCode.fromJsonMap(data['code']);
+    this.code = new DartCode.fromMap(data['code']);
   
 
   toJson() => { 'type' : type,'code' : code, 'id' : id };

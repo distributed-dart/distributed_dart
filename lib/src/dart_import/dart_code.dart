@@ -37,24 +37,24 @@ class DartCode {
   
   /// Create DartCode object from JSON String.
   factory DartCode.fromJson(String jsonString) {
-    return new DartCode.fromJsonMap(json.parse(jsonString));
+    return new DartCode.fromMap(json.parse(jsonString));
   }
   
   /// Create DartCode object from Map object (from json.parse()).
-  factory DartCode.fromJsonMap(Map jMap) {
+  factory DartCode.fromMap(Map map) {
     List<DartCode> dependencies;
     
-    if (jMap.containsKey(_DEPENDENCIES) && jMap[_DEPENDENCIES] != null) {
+    if (map.containsKey(_DEPENDENCIES) && map[_DEPENDENCIES] != null) {
       dependencies = new List<DartCode>();
       
-      jMap[_DEPENDENCIES].forEach((var jDartCodeMap) {
-        if (jDartCodeMap != null) {
-          dependencies.add(new DartCode.fromJsonMap(jDartCodeMap));
+      map[_DEPENDENCIES].forEach((var dartCodeMap) {
+        if (dartCodeMap != null) {
+          dependencies.add(new DartCode.fromMap(dartCodeMap));
         }
       });
     }
     
-    return new DartCode(jMap[_NAME], jMap[_PATH], jMap[_HASH], dependencies);
+    return new DartCode(map[_NAME], map[_PATH], map[_HASH], dependencies);
   }
   
   /**
