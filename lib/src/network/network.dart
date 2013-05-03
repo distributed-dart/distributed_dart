@@ -7,11 +7,6 @@ class Host {
   Host(this.addr, this.port);
 }
 
-class HostLookup {
-  static Host isolateId(IsolateId id) => new Host('127.0.0.1', 12345);
-  static Host hostname(String name) => new Host('127.0.0.1', 12345);
-}
-
 class Server {
   var handlerList = new RequestHandlerList();
 
@@ -32,10 +27,6 @@ class Server {
       .transform(new JsonDecoder())
       .listen(handlerList.runAll);
   }
-}
-
-class FileServer {
-  FileServer(DartCode code);
 }
 
 class Network {

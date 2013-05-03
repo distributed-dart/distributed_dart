@@ -74,7 +74,7 @@ class IsolateDataRequest implements Request {
 }
 
 createRemoteIsolate(IsolateId id, String uri){
-  var code = new DartCode.dummy(); // TODO: integrate with library lookup: code = lookup(uri);
+  var code = new DartCode(); // TODO: integrate with library lookup: code = lookup(uri);
   var fs = new FileServer(code);  // TODO: make file server
   var request = new SpawnIsolateRequest(id, code);
   new Network.isolateId(id).send(request.stream);
