@@ -51,6 +51,11 @@ class DartCodeChild {
     return _hashListToString(_fileHash);
   }
   
+  /// Return SHA1 checksum as a [List<int>].
+  List<int> get fileHashAsList {
+    return _fileHash.toList(growable: false);
+  }
+  
   /**
    * Get a list of [DartCode] objects there are dependencies for this [DartCode]
    * instance. Each object in the list can also have dependencies.

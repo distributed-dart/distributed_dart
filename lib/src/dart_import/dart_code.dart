@@ -35,7 +35,7 @@ class DartCode extends DartCodeChild {
   /// Create DartCode object from DartCodeChild.
   DartCode.fromDartCodeChild(DartCodeChild c) : this(c.name, 
                                                      c.path, 
-                                                     c.hashCode, 
+                                                     c._fileHash, 
                                                      c.dependencies);
   
   /// Create DartCode object from JSON String.

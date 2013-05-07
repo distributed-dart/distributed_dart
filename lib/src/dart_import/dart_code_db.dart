@@ -85,7 +85,7 @@ class DartCodeDb {
         SHA1 sum = new SHA1();
         sum.add(content);
         
-        if (_compareLists(sum.close(), code.fileHash) == false) {
+        if (_compareLists(sum.close(), code.fileHashAsList) == false) {
           throw new FileChangedException();
         } else {
           return content;
