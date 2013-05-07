@@ -2,12 +2,12 @@ part of distributed_dart;
 
 class DartCodeDb {
   // Full path is the key
-  Map<String,Future<DartCode>> _pathToDartCode = new Map<String,Future<DartCode>>();
+  static Map<String,Future<DartCode>> _pathToDartCode = new Map();
   
   // Hash => Source code as List<int>
-  Map<String,Future<List<int>>> _sourceCache = new Map<String,Future<List<int>>>();
+  static Map<String,Future<List<int>>> _sourceCache = new Map();
   
-  Future<DartCode> resolve(String uri, {bool useCache: true} ) {
+  static Future<DartCode> resolve(String uri, {bool useCache: true} ) {
     _log("Running resolve($uri, $useCache");
     File sourceFile = new File(uri);
     
@@ -61,7 +61,7 @@ class DartCodeDb {
           }
           _log("    Full path is: ${fullFilePath.toNativePath()}");
           
-          return this.resolve(fullFilePath.toNativePath(), useCache:useCache);
+          return resolve(fullFilePath.toNativePath(), useCache:useCache);
         })).then((List<DartCode> dependencies) {
           return new DartCode(path.filename, path.toNativePath(), hash, dependencies);
         });
@@ -72,12 +72,12 @@ class DartCodeDb {
     });
   }
   
-  void clearCache() {
+  static void clearCache() {
     _sourceCache.clear();
   }
   
-  Future<List<int>> getSource(DartCode code) {
-    String hash = code.dartCodeHashAsString;
+  static Future<List<int>> getSource(DartCode code) {
+    String hash = code.fileHash;
     Future<List<int>> sourceCode = _sourceCache[hash];
     
     if (sourceCode == null) {
@@ -97,48 +97,7 @@ class DartCodeDb {
     return sourceCode;
   }
   
-  Future<List<int>> getSourceFromHash(String hash) {
+  static Future<List<int>> getSourceFromHash(String hash) {
     return _sourceCache[hash];
   }
-  
-  DartCode _resolve(String uri) {
-    
-  }
 }
-
-/*
-import "dart:async";
-import "dart:io";
-
-class Cache {
-  Map<String, Future<String>> cacheContent = new Map<String, Future<String>>();
-  
-  Future<String> getContent(String q) {
-    if (!cacheContent.containsKey(q)) {
-      cacheContent[q] = new Future<String>(() {
-        File f = new File("bin/futuretest.dart");
-        return f.readAsString();
-      });
-    }
-    return cacheContent[q];
-  }
-}
-
-void main() {
-  Future<String> f = new Future.value("Farmen");
-  
-  f.then((t) => print(t));
-  f.then((t) => print("Vi udskriver lige $t"));
-  f.whenComplete(() => print("Future er færdig"));
-  
-  Cache c = new Cache();
-  
-  c.getContent("Hest").then((t) => print("1. $t og ${c.getContent("robåd").then((x) => print(x))}"));
-  c.getContent("Hest").then((t) => print("2. $t og ${c.getContent("robåd").then((x) => print(x))}"));
-  c.getContent("Hest").then((t) => print("3. $t"));
-  
-  c.getContent("robåd").then((x) => print("Test " + x));
-  
-  print("Hello, World!");
-}
-*/

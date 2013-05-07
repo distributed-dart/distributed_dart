@@ -13,26 +13,30 @@ part of distributed_dart;
  * program. To get the source code of an [DartCode] instance please use the
  * [DartCodeDb] class.
  */
-class DartCode {
-  static const String _NAME = "name";
-  static const String _PATH = "path";
-  static const String _HASH = "hash";
-  static const String _DEPENDENCIES = "dependencies";
+class DartCode extends DartCodeChild {
+  // Stupid hack because we can't extend and get static variables :(
+  static const String _NAME         = DartCodeChild._NAME;
+  static const String _PATH         = DartCodeChild._PATH;
+  static const String _HASH         = DartCodeChild._HASH;
+  static const String _DEPENDENCIES = DartCodeChild._DEPENDENCIES;
   
-  /// File name of the Dart file the object represent.
-  final String name;
+  DartCode(String name, 
+           String path, 
+           List<int> hash, 
+           List<DartCodeChild> dependencies) 
+           : super(name,path,hash,dependencies) {
+              _shortenPaths();
+           }
   
-  /// Full path to the Dart file the object represent.
-  final String path;
+  static Future<DartCode> resolve(String uri, {bool useCache: true}) {
+    return DartCodeDb.resolve(uri, useCache:useCache);
+  }
   
-  /// SHA1 checksum of the Dart file the object represent.
-  final List<int> _hash;
-  
-  /// List of dependenceies for the Dart file the object represent.
-  final List<DartCode> _dependencies;
-  
-  /// Create DartCode instance. Should only be used by [DartCodeDb].
-  const DartCode(this.name, this.path, this._hash, this._dependencies);
+  /// Create DartCode object from DartCodeChild.
+  DartCode.fromDartCodeChild(DartCodeChild c) : this(c.name, 
+                                                     c.path, 
+                                                     c.hashCode, 
+                                                     c.dependencies);
   
   /// Create DartCode object from JSON String.
   factory DartCode.fromJson(String jsonString) {
@@ -41,37 +45,19 @@ class DartCode {
   
   /// Create DartCode object from Map object (from json.parse()).
   factory DartCode.fromMap(Map map) {
-    List<DartCode> dependencies;
+    List<DartCodeChild> dependencies;
     
     if (map.containsKey(_DEPENDENCIES) && map[_DEPENDENCIES] != null) {
-      dependencies = new List<DartCode>();
+      dependencies = new List<DartCodeChild>();
       
       map[_DEPENDENCIES].forEach((var dartCodeMap) {
         if (dartCodeMap != null) {
-          dependencies.add(new DartCode.fromMap(dartCodeMap));
+          dependencies.add(new DartCodeChild.fromMap(dartCodeMap));
         }
       });
     }
     
     return new DartCode(map[_NAME], map[_PATH], map[_HASH], dependencies);
-  }
-  
-  /**
-   * Get a list of [DartCode] objects there are dependencies for this [DartCode]
-   * instance. Each object in the list can also have dependencies.
-   */
-  List<DartCode> get dependencies {
-    return _dependencies.toList(growable: false);
-  }
-  
-  /// Return SHA1 checksum of the DartFile as a list of [int].
-  List<int> get fileHash {
-    return _hash.toList(growable: false);
-  }
-  
-  /// Return SHA1 checksum of the DartFile as a [String].
-  String get fileHashAsString {
-    return _hashListToString(_hash);
   }
   
   /***
@@ -80,31 +66,38 @@ class DartCode {
    * the checksum is different if there are changes in one of the files in the 
    * tree of [DartCode] objects.
    */
-  List<int> get dartCodeHash {
+  String get treeHash {
     SHA1 sum = new SHA1();
     sum.add(name.codeUnits);
-    sum.add(_hash);
-    _dependencies.forEach((DartCode x) => sum.add(x._hash));
-    return sum.close();
+    sum.add(_fileHash);
+    _allChild(this).forEach((DartCodeChild child) => sum.add(child._fileHash));
+    return _hashListToString(sum.close());
   }
   
-   /// Do the same as [dartCodeHash] but returns the SHA1 checksum as a String.
-  String get dartCodeHashAsString {
-    return _hashListToString(dartCodeHash);
+  void _shortenPaths() {
+    List<DartCodeChild> children = _allChild(this).toList(growable: false);
+    
+    Path basePath = new Path(this.path).directoryPath;
+    int segmentsInBasePath = basePath.segments().length;
+    
+    children.forEach((DartCodeChild child) {
+      Path check = new Path(child.path).directoryPath;
+      int segmentsInCheck = check.segments().length;
+      
+      if (segmentsInCheck < segmentsInBasePath) {
+        basePath = check;
+        segmentsInBasePath = segmentsInCheck;
+      }
+    });
+    
+    children.forEach((DartCodeChild child) {
+      child._path = new Path(child.path).relativeTo(basePath).toString();
+    });
   }
   
-  /**
-   * Generate Map object from DartCode instance and is required to make it 
-   * possible to convert a DartCode instance to an JSON string.
-   */
-  Map<String, Object> toJson() {
-    var returnMap = new Map();
-    
-    returnMap[_NAME] = this.name;
-    returnMap[_PATH] = this.path;
-    returnMap[_HASH] = this._hash;
-    returnMap[_DEPENDENCIES] = this._dependencies;  
-    
-    return returnMap;
+  Iterable<DartCodeChild> _allChild(DartCodeChild child) {
+    return child.dependencies.expand((DartCodeChild subChild) 
+        => subChild.dependencies.expand((DartCodeChild subsubChild) 
+            => _allChild(subsubChild)));
   }
 }

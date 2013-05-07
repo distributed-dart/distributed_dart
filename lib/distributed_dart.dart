@@ -9,6 +9,7 @@ import 'dart:crypto';
 part 'src/dart_import/util/characters.dart';
 part 'src/dart_import/util/tools.dart';
 part 'src/dart_import/dart_code.dart';
+part 'src/dart_import/dart_code_child.dart';
 part 'src/dart_import/dart_code_db.dart';
 part 'src/dart_import/scanner.dart';
 part 'src/dart_import/exceptions.dart';
@@ -19,7 +20,21 @@ part 'src/network/placeholders.dart';
 part 'src/network/requesthandler.dart';
 part 'src/network/streamtransformations.dart';
 
+bool _workDirInUse = false;
+String _workDir = ".distribued_dart_data/";
 
+set workDir(String path) {
+  if (_workDirInUse) {
+    String e = "Not allowed to set workDir variable after it is used.";
+    throw new WorkDirInUseException(e);
+  }
+  _workDir = path;
+}
+
+String get workDir {
+  _workDirInUse = true;
+  return _workDir;
+}
 
 /**
  * Set to [true] for enabling debug output from the distributed_dart library.
