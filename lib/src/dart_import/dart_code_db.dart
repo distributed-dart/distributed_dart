@@ -81,7 +81,8 @@ class DartCodeDb {
     Future<List<int>> sourceCode = _sourceCache[hash];
     
     if (sourceCode == null) {
-      sourceCode = new File(code.path).readAsBytes().then((List<int> content) {
+      File sourceFile = new File.fromPath(code.path);
+      sourceCode = sourceFile.readAsBytes().then((List<int> content) {
         SHA1 sum = new SHA1();
         sum.add(content);
         
