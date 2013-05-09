@@ -50,22 +50,6 @@ class DartCode extends DartCodeChild {
   /// Create DartCode object from Map object (from json.parse()).
   factory DartCode.fromMap(Map map) {
     return new DartCode.fromDartCodeChild(new DartCodeChild.fromMap(map));
-    
-//    List<DartCodeChild> dependencies;
-//    
-//    if (map.containsKey(_DEPENDENCIES) && map[_DEPENDENCIES] != null) {
-//      dependencies = new List<DartCodeChild>();
-//      
-//      map[_DEPENDENCIES].forEach((var dartCodeMap) {
-//        if (dartCodeMap != null) {
-//          dependencies.add(new DartCodeChild.fromMap(dartCodeMap));
-//        }
-//      });
-//    }
-//    
-//    Path path = new Path(map[_PATH]);
-//    
-//    return new DartCode(map[_NAME], path, map[_HASH], dependencies);
   }
   
   /***
