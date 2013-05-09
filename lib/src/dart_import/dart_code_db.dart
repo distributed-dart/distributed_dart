@@ -2,13 +2,13 @@ part of distributed_dart;
 
 class DartCodeDb {
   // Full path is the key
-  static Map<String,Future<DartCode>> _pathToDartCode = new Map();
+  static Map<String,Future<DartCodeChild>> _pathToDartCode = new Map();
   
   // Hash => Source code as List<int>
   static Map<String,Future<List<int>>> _sourceCache = new Map();
   
-  static Future<DartCode> resolve(String uri, {bool useCache: true} ) {
-    _log("Running resolve($uri, $useCache");
+  static Future<DartCodeChild> resolve(String uri, {bool useCache: true} ) {
+    _log("Running DartCodeDb.resolve($uri, $useCache)");
     File sourceFile = new File(uri);
     
     return sourceFile.fullPath().then((String fullPathString) {
@@ -16,7 +16,7 @@ class DartCodeDb {
       Path dir = path.directoryPath;
       Path packageDir = dir.append("packages");
       
-      Future<DartCode> dartCode;
+      Future<DartCodeChild> dartCode;
       
       if (useCache) {
         dartCode = _pathToDartCode[path.toNativePath()];
@@ -62,8 +62,8 @@ class DartCodeDb {
           _log("    Full path is: ${fullFilePath.toNativePath()}");
           
           return resolve(fullFilePath.toNativePath(), useCache:useCache);
-        })).then((List<DartCode> dependencies) {
-          return new DartCode(path.filename, path.toNativePath(), hash, dependencies);
+        })).then((List<DartCodeChild> dependencies) {
+          return new DartCodeChild(path.filename, path, hash, dependencies);
         });
       });
       

@@ -21,22 +21,26 @@ class DartCode extends DartCodeChild {
   static const String _DEPENDENCIES = DartCodeChild._DEPENDENCIES;
   
   DartCode(String name, 
-           String path, 
+           Path path, 
            List<int> hash, 
            List<DartCodeChild> dependencies) 
-           : super(name,path,hash,dependencies) {
-              _shortenPaths();
-           }
+           : super(name,path,hash,dependencies);
+           
+  /// Create DartCode object from DartCodeChild.
+  DartCode.fromDartCodeChild(DartCodeChild child) : this(child.name, 
+      child.path, 
+      child._fileHash, 
+      child._dependencies);
   
   static Future<DartCode> resolve(String uri, {bool useCache: true}) {
-    return DartCodeDb.resolve(uri, useCache:useCache);
+    _log("Running resolve($uri, $useCache)");
+    
+    return DartCodeDb.resolve(uri, useCache:useCache).then((DartCodeChild c) {
+      DartCode code = new DartCode.fromDartCodeChild(c);
+      code._shortenPaths();
+      return code;
+    });
   }
-  
-  /// Create DartCode object from DartCodeChild.
-  DartCode.fromDartCodeChild(DartCodeChild c) : this(c.name, 
-                                                     c.path, 
-                                                     c._fileHash, 
-                                                     c.dependencies);
   
   /// Create DartCode object from JSON String.
   factory DartCode.fromJson(String jsonString) {
@@ -45,19 +49,23 @@ class DartCode extends DartCodeChild {
   
   /// Create DartCode object from Map object (from json.parse()).
   factory DartCode.fromMap(Map map) {
-    List<DartCodeChild> dependencies;
+    return new DartCode.fromDartCodeChild(new DartCodeChild.fromMap(map));
     
-    if (map.containsKey(_DEPENDENCIES) && map[_DEPENDENCIES] != null) {
-      dependencies = new List<DartCodeChild>();
-      
-      map[_DEPENDENCIES].forEach((var dartCodeMap) {
-        if (dartCodeMap != null) {
-          dependencies.add(new DartCodeChild.fromMap(dartCodeMap));
-        }
-      });
-    }
-    
-    return new DartCode(map[_NAME], map[_PATH], map[_HASH], dependencies);
+//    List<DartCodeChild> dependencies;
+//    
+//    if (map.containsKey(_DEPENDENCIES) && map[_DEPENDENCIES] != null) {
+//      dependencies = new List<DartCodeChild>();
+//      
+//      map[_DEPENDENCIES].forEach((var dartCodeMap) {
+//        if (dartCodeMap != null) {
+//          dependencies.add(new DartCodeChild.fromMap(dartCodeMap));
+//        }
+//      });
+//    }
+//    
+//    Path path = new Path(map[_PATH]);
+//    
+//    return new DartCode(map[_NAME], path, map[_HASH], dependencies);
   }
   
   /***
@@ -75,7 +83,28 @@ class DartCode extends DartCodeChild {
   }
   
   void _shortenPaths() {
-    List<DartCodeChild> children = _allChild(this).toList(growable: false);
+    _log("Running _shortenPaths()");
+    List<DartCodeChild> dependencies = _allChild(this).toList(growable:false);
+    
+    // Get all segments of all paths in dependencies and this DartCode instance.
+    List<List<String>> paths = dependencies.map((DartCodeChild child) {
+      return child.path.segments();
+    }).toList(growable: true);
+    
+    paths.add(this.path.segments());
+    
+    int segmentsToRemove = _countEqualSegments(paths);
+    
+    dependencies.forEach((DartCodeChild child) {
+      child._path = _removeSegmentsOfPath(child._path, segmentsToRemove);
+    });
+    this._path = _removeSegmentsOfPath(this._path, segmentsToRemove);
+    
+    
+    /*
+    List<DartCodeChild> children = _allChild(this).toList(growable:false);
+    
+    _allChild(this).forEach((x) => print(x.name));
     
     Path basePath = new Path(this.path).directoryPath;
     int segmentsInBasePath = basePath.segments().length;
@@ -90,14 +119,75 @@ class DartCode extends DartCodeChild {
       }
     });
     
+    _log("Base path: $basePath");
+    
     children.forEach((DartCodeChild child) {
+      _log("Old path: ${child.path}");
       child._path = new Path(child.path).relativeTo(basePath).toString();
+      _log("New path: ${child.path}");
     });
+    */
+  }
+
+  int _countEqualSegments(List<List<String>> paths) {
+    _log("Running _countEqualSegments()");
+    paths.forEach((List<String> x) => print(x));
+    
+    int minSegmentLength = paths[0].length;
+    
+    // Get the size of the shortest list
+    paths.forEach((List<String> segments) {
+      if (segments.length < minSegmentLength) {
+        minSegmentLength = segments.length;
+      }
+    });
+    
+    /*
+     * Find the number of equal segments in a list of segments:
+     * 
+     * List1 = [ "c", "Program Files", "Admin" ]
+     * List2 = [ "c", "Users", "Admin", "Test Data" ]
+     * List3 = [ "c", "Users", "Admin" ]
+     * 
+     * In this example we should return 1 because only 1 segment is equal in all
+     * lists. We don't count equal segments after the first found of non-equal
+     * list of segments (so "Admin" will not count here").
+     */
+    for (int i = 0; i < minSegmentLength; i++) {
+      String compareValue = paths[0][i];
+      
+      for (int k = 0; k < paths.length; k++) {
+        if (paths[k][i] != compareValue) {
+          _log("Return value for _countEqualSegments() = $i");
+          return i;
+        }
+      }
+    }
+    
+    _log("Return value for _countEqualSegments() = $minSegmentLength");
+    return minSegmentLength;
+  }
+  
+  Path _removeSegmentsOfPath(Path path, int segmentsToRemove) {
+    StringBuffer sb = new StringBuffer();
+    List<String> segments = path.segments();
+    
+    segments.skip(segmentsToRemove).forEach((String segment) {
+      sb.write("/");
+      sb.write(segment);
+    });
+    
+    return new Path(sb.toString());
   }
   
   Iterable<DartCodeChild> _allChild(DartCodeChild child) {
-    return child.dependencies.expand((DartCodeChild subChild) 
-        => subChild.dependencies.expand((DartCodeChild subsubChild) 
-            => _allChild(subsubChild)));
+    _log("Running _allChild(${child.name})");
+    
+    return child.dependencies.expand((DartCodeChild subChild) {
+      List<DartCodeChild> list = 
+          new List.from(_allChild(subChild), growable:true);
+      list.add(subChild);
+      return list;
+    });
   }
 }

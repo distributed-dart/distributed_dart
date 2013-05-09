@@ -10,7 +10,7 @@ class DartCodeChild {
   final String name;
   
   /// Full path to the Dart file the object represent.
-  String _path;
+  Path _path;
   
   /// SHA1 checksum of the Dart file the object represent.
   final List<int> _fileHash;
@@ -35,14 +35,15 @@ class DartCodeChild {
       });
     }
     
-    return new DartCode(map[_NAME], map[_PATH], map[_HASH], dependencies);
+    Path path = new Path(map[_PATH]);
+    return new DartCode(map[_NAME], path, map[_HASH], dependencies);
   }
   
   /**
    *  Path to the Dart file the object represent. The path is made as short as
    *  possible.
    */
-  String get path {
+  Path get path {
     return _path;
   }
   
@@ -72,7 +73,7 @@ class DartCodeChild {
     var returnMap = new Map();
     
     returnMap[_NAME] = this.name;
-    returnMap[_PATH] = this.path;
+    returnMap[_PATH] = this.path.toString();
     returnMap[_HASH] = this._fileHash;
     returnMap[_DEPENDENCIES] = this._dependencies;
     
