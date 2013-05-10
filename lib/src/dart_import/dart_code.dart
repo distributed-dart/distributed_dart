@@ -79,33 +79,6 @@ class DartCode extends DartCodeChild {
     dependencies.forEach((DartCodeChild node) {
       node._path = _removeSegmentsOfPath(node._path, segmentsToRemove);
     });
-    
-    /*
-    List<DartCodeChild> children = _allChild(this).toList(growable:false);
-    
-    _allChild(this).forEach((x) => print(x.name));
-    
-    Path basePath = new Path(this.path).directoryPath;
-    int segmentsInBasePath = basePath.segments().length;
-    
-    children.forEach((DartCodeChild child) {
-      Path check = new Path(child.path).directoryPath;
-      int segmentsInCheck = check.segments().length;
-      
-      if (segmentsInCheck < segmentsInBasePath) {
-        basePath = check;
-        segmentsInBasePath = segmentsInCheck;
-      }
-    });
-    
-    _log("Base path: $basePath");
-    
-    children.forEach((DartCodeChild child) {
-      _log("Old path: ${child.path}");
-      child._path = new Path(child.path).relativeTo(basePath).toString();
-      _log("New path: ${child.path}");
-    });
-    */
   }
 
   int _countEqualSegments(List<List<String>> paths) {
