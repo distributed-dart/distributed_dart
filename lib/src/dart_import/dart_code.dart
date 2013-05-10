@@ -162,9 +162,8 @@ class DartCode extends DartCodeChild {
   List<DartCodeChild> _getTree(DartCodeChild node) {
     _log("Running _getTree(${node.name})");
     
-    List<DartCodeChild> nodes = node.dependencies.expand(
-        (DartCodeChild subChild) {
-      List<DartCodeChild> list = _getTree(subChild);
+    List<DartCodeChild> nodes = node.dependencies.expand((DartCodeChild sub) {
+      List<DartCodeChild> list = _getTree(sub);
       return list;
     }).toList(growable:true);
     nodes.add(node);
