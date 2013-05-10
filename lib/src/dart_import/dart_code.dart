@@ -5,8 +5,11 @@ part of distributed_dart;
  * dependencies. The following informations is saved inside the class:
  * 
  * * File Name.
+ * 
  * * Full path.
+ * 
  * * SHA1 checksum.
+ * 
  * * Dependencies to other Dart files.
  * 
  * Please notice the class doesn’t contains the actual source code of the
@@ -83,17 +86,17 @@ class DartCode extends DartCodeChild {
    * Takes the path from the DartCode object and all dependencies and removes
    * unnecessary parts of the path.  E.g.
    * 
-   * * C:\Users\Dart\Code\Program.dart
-   * * C:\Users\Dart\Code\Packages\important_lib.dart
-   * * C:\Users\Dart\Code\Packages\data\model.dart
-   * * C:\Users\Dart\Code\Packages\server\database.dart
+   *     C:\Users\Dart\Code\Program.dart
+   *     C:\Users\Dart\Code\Packages\important_lib.dart
+   *     C:\Users\Dart\Code\Packages\data\model.dart
+   *     C:\Users\Dart\Code\Packages\server\database.dart
    * 
    * This will change the paths into:
    * 
-   * \Program.dart
-   * \Packages\important_lib.dart
-   * \Packages\data\model.dart
-   * \Packages\server\database.dart
+   *     \Program.dart
+   *     \Packages\important_lib.dart
+   *     \Packages\data\model.dart
+   *     \Packages\server\database.dart
    * 
    * The purpose is to make the paths independent of the running system.
    */
