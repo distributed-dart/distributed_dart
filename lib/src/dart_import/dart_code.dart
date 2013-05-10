@@ -154,6 +154,14 @@ class DartCode extends DartCodeChild {
     return minSegmentLength;
   }
   
+  /**
+   * Removes a number of segments of a given Path and creates a new Path with
+   * the rest of segmenst. E.g.:
+   * 
+   *     Path p = new Path("C:\\User\\Dart\\Programs\\Fun\\main.dart");
+   *     p = _removeSegmentsOfPath(p,3);
+   *     p == new Path("\\Programs\\Fun\\main.dart");
+   */
   Path _removeSegmentsOfPath(Path path, int segmentsToRemove) {
     StringBuffer sb = new StringBuffer();
     List<String> segments = path.segments();
@@ -166,6 +174,11 @@ class DartCode extends DartCodeChild {
     return new Path(sb.toString());
   }
   
+  /**
+   * Get a list of the DartCode object and all dependencies needed to use the
+   * DartCode object. This is not the same as [dependencies] because this method
+   * also returns all dependencies of each dependency.
+   */
   List<DartCodeChild> _getTree(DartCodeChild node) {
     _log("Running _getTree(${node.name})");
     
