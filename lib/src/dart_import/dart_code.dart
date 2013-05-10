@@ -5,11 +5,8 @@ part of distributed_dart;
  * dependencies. The following informations is saved inside the class:
  * 
  * * File Name.
- * 
  * * Full path.
- * 
  * * SHA1 checksum.
- * 
  * * Dependencies to other Dart files.
  * 
  * Please notice the class doesn’t contains the actual source code of the
@@ -66,7 +63,7 @@ class DartCode extends DartCodeChild {
    */
   String _treeHashCache = null;
   
-  /***
+  /**
    * Returns a calculated SHA1 checksum for the DartCode object and all the 
    * dependencies in the tree.  The purpose of this checksum is to make sure 
    * the checksum is different if there are changes in one of the files in the 
