@@ -82,8 +82,9 @@ class DartCode extends DartCodeChild {
   }
 
   int _countEqualSegments(List<List<String>> paths) {
-    _log("Running _countEqualSegments()");
-    paths.forEach((List<String> x) => print(x));
+    _log("Running _countEqualSegments(");
+    paths.forEach((List<String> x) => _log("     $x"));
+    _log(");");
     
     int minSegmentLength = paths[0].length;
     
