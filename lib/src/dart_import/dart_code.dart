@@ -61,29 +61,24 @@ class DartCode extends DartCodeChild {
   String get treeHash {
     SHA1 sum = new SHA1();
     sum.add(name.codeUnits);
-    sum.add(_fileHash);
-    _allChild(this).forEach((DartCodeChild child) => sum.add(child._fileHash));
+    _getTree(this).forEach((DartCodeChild child) => sum.add(child._fileHash));
     return _hashListToString(sum.close());
   }
   
   void _shortenPaths() {
     _log("Running _shortenPaths()");
-    List<DartCodeChild> dependencies = _allChild(this).toList(growable:false);
+    List<DartCodeChild> dependencies = _getTree(this).toList(growable:false);
     
     // Get all segments of all paths in dependencies and this DartCode instance.
     List<List<String>> paths = dependencies.map((DartCodeChild child) {
       return child.path.segments();
     }).toList(growable: true);
     
-    paths.add(this.path.segments());
-    
     int segmentsToRemove = _countEqualSegments(paths);
     
-    dependencies.forEach((DartCodeChild child) {
-      child._path = _removeSegmentsOfPath(child._path, segmentsToRemove);
+    dependencies.forEach((DartCodeChild node) {
+      node._path = _removeSegmentsOfPath(node._path, segmentsToRemove);
     });
-    this._path = _removeSegmentsOfPath(this._path, segmentsToRemove);
-    
     
     /*
     List<DartCodeChild> children = _allChild(this).toList(growable:false);
@@ -164,14 +159,16 @@ class DartCode extends DartCodeChild {
     return new Path(sb.toString());
   }
   
-  Iterable<DartCodeChild> _allChild(DartCodeChild child) {
-    _log("Running _allChild(${child.name})");
+  List<DartCodeChild> _getTree(DartCodeChild node) {
+    _log("Running _getTree(${node.name})");
     
-    return child.dependencies.expand((DartCodeChild subChild) {
-      List<DartCodeChild> list = 
-          new List.from(_allChild(subChild), growable:true);
-      list.add(subChild);
+    List<DartCodeChild> nodes = node.dependencies.expand(
+        (DartCodeChild subChild) {
+      List<DartCodeChild> list = _getTree(subChild);
       return list;
-    });
+    }).toList(growable:true);
+    nodes.add(node);
+
+    return nodes;
   }
 }

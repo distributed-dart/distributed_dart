@@ -34,7 +34,7 @@ void main() {
     
     //db.getSource(new dist.DartCode("scanner_usage_example.dart", "lib/distributed_dart.dart", checksumint, [])).then((List<int> t) => t.forEach((int x) => print(new String.fromCharCode(x))));
     
-    dist.DartCode.resolve("example/network_example.dart", useCache:true).then((dist.DartCode code) {
+    dist.DartCode.resolve("example/scanner_usage_example.dart", useCache:true).then((dist.DartCode code) {
       print(code.path);
       
       code.dependencies.forEach((dist.DartCodeChild object) {
