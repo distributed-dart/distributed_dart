@@ -94,10 +94,10 @@ class DartCode extends DartCodeChild {
    * 
    * This will change the paths into:
    * 
-   *     \Program.dart
-   *     \Packages\important_lib.dart
-   *     \Packages\data\model.dart
-   *     \Packages\server\database.dart
+   *     Program.dart
+   *     Packages\important_lib.dart
+   *     Packages\data\model.dart
+   *     Packages\server\database.dart
    * 
    * The purpose is to make the paths independent of the running system.
    */
@@ -164,14 +164,20 @@ class DartCode extends DartCodeChild {
    * 
    *     Path p = new Path("C:\\User\\Dart\\Programs\\Fun\\main.dart");
    *     p = _removeSegmentsOfPath(p,3);
-   *     p == new Path("\\Programs\\Fun\\main.dart");
+   *     p == new Path("Programs\\Fun\\main.dart");
    */
   Path _removeSegmentsOfPath(Path path, int segmentsToRemove) {
     StringBuffer sb = new StringBuffer();
     List<String> segments = path.segments();
     
+    bool first = true;
+    
     segments.skip(segmentsToRemove).forEach((String segment) {
-      sb.write("/");
+      if (first) {
+        first = false;
+      } else {
+        sb.write("/");
+      }
       sb.write(segment);
     });
     
