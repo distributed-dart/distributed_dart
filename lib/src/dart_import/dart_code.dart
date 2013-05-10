@@ -19,13 +19,11 @@ class DartCode extends DartCodeChild {
            List<int> hash, 
            List<DartCodeChild> dependencies) 
            : super(name,path,hash,dependencies);
-           
-  /// Create DartCode object from DartCodeChild.
-  DartCode.fromDartCodeChild(DartCodeChild child) : this(child.name, 
-      child.path, 
-      child._fileHash, 
-      child._dependencies);
-  
+
+  /**
+   * Create DartCode object from URI to a valid Dart program. The DartCode
+   * object contains information about all dependencies for the program.
+   */
   static Future<DartCode> resolve(String uri, {bool useCache: true}) {
     _log("Running resolve($uri, $useCache)");
     
@@ -35,6 +33,16 @@ class DartCode extends DartCodeChild {
       return code;
     });
   }
+           
+  /**
+   *  Create DartCode object from DartCodeChild. The purpose is to upgrade a
+   *  child node to a main node in the tree. Should only be used when you are
+   *  sure the child node is actually the program you want to run.
+   */
+  DartCode.fromDartCodeChild(DartCodeChild child) : this(child.name, 
+      child.path, 
+      child._fileHash, 
+      child._dependencies);
   
   /// Create DartCode object from JSON String.
   factory DartCode.fromJson(String jsonString) {
