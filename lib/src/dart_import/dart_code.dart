@@ -14,6 +14,10 @@ part of distributed_dart;
  * [DartCodeDb] class.
  */
 class DartCode extends DartCodeChild {
+  /**
+   * Should only be used by DartCode related classes. Please use [resolve] to
+   * get an DartCode instance. 
+   */
   DartCode(String name, 
            Path path, 
            List<int> hash, 
