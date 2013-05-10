@@ -56,7 +56,13 @@ class DartCode extends DartCodeChild {
     return new DartCode.fromDartCodeChild(new DartCodeChild.fromMap(map));
   }
   
+  /*
+   *  Because the operation can be a little CPU intensive we save this. There
+   *  are no risks involved because the hashsum of each dependency of the 
+   *  DartCode can't be changed after creation of the DartCode object.
+   */
   String _treeHashCache = null;
+  
   /***
    * Returns a calculated SHA1 checksum for the DartCode object and all the 
    * dependencies in the tree.  The purpose of this checksum is to make sure 
@@ -73,6 +79,24 @@ class DartCode extends DartCodeChild {
     return _treeHashCache;
   }
   
+  /**
+   * Takes the path from the DartCode object and all dependencies and removes
+   * unnecessary parts of the path.  E.g.
+   * 
+   * * C:\Users\Dart\Code\Program.dart
+   * * C:\Users\Dart\Code\Packages\important_lib.dart
+   * * C:\Users\Dart\Code\Packages\data\model.dart
+   * * C:\Users\Dart\Code\Packages\server\database.dart
+   * 
+   * This will change the paths into:
+   * 
+   * \Program.dart
+   * \Packages\important_lib.dart
+   * \Packages\data\model.dart
+   * \Packages\server\database.dart
+   * 
+   * The purpose is to make the paths independent of the running system.
+   */
   void _shortenPaths() {
     _log("Running _shortenPaths()");
     List<DartCodeChild> dependencies = _getTree(this).toList(growable:false);
@@ -88,7 +112,18 @@ class DartCode extends DartCodeChild {
       node._path = _removeSegmentsOfPath(node._path, segmentsToRemove);
     });
   }
-
+  
+  /**
+   * Find the number of equal segments in a list of segments:
+   * 
+   *     List1 = [ "c", "Program Files", "Admin" ]
+   *     List2 = [ "c", "Users", "Admin", "Test Data" ]
+   *     List3 = [ "c", "Users", "Admin" ]
+   * 
+   * In this example we should return 1 because only 1 segment is equal in all
+   * lists. We don't count equal segments after the first found of non-equal
+   * list of segments (so "Admin" will not count here").
+   */
   int _countEqualSegments(List<List<String>> paths) {
     _log("Running _countEqualSegments(");
     paths.forEach((List<String> x) => _log("     $x"));
@@ -103,17 +138,7 @@ class DartCode extends DartCodeChild {
       }
     });
     
-    /*
-     * Find the number of equal segments in a list of segments:
-     * 
-     * List1 = [ "c", "Program Files", "Admin" ]
-     * List2 = [ "c", "Users", "Admin", "Test Data" ]
-     * List3 = [ "c", "Users", "Admin" ]
-     * 
-     * In this example we should return 1 because only 1 segment is equal in all
-     * lists. We don't count equal segments after the first found of non-equal
-     * list of segments (so "Admin" will not count here").
-     */
+    // Find the number of equal segments in a list of segments
     for (int i = 0; i < minSegmentLength; i++) {
       String compareValue = paths[0][i];
       
