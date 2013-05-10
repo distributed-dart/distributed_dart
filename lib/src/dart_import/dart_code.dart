@@ -14,12 +14,6 @@ part of distributed_dart;
  * [DartCodeDb] class.
  */
 class DartCode extends DartCodeChild {
-  // Stupid hack because we can't extend and get static variables :(
-  static const String _NAME         = DartCodeChild._NAME;
-  static const String _PATH         = DartCodeChild._PATH;
-  static const String _HASH         = DartCodeChild._HASH;
-  static const String _DEPENDENCIES = DartCodeChild._DEPENDENCIES;
-  
   DartCode(String name, 
            Path path, 
            List<int> hash, 
@@ -49,9 +43,12 @@ class DartCode extends DartCodeChild {
   
   /// Create DartCode object from Map object (from json.parse()).
   factory DartCode.fromMap(Map map) {
+    _log("Running DartCode.fromMap() for ${map[DartCodeChild._NAME]}");
+    
     return new DartCode.fromDartCodeChild(new DartCodeChild.fromMap(map));
   }
   
+  String _treeHashCache = null;
   /***
    * Returns a calculated SHA1 checksum for the DartCode object and all the 
    * dependencies in the tree.  The purpose of this checksum is to make sure 
@@ -59,10 +56,13 @@ class DartCode extends DartCodeChild {
    * tree of [DartCode] objects.
    */
   String get treeHash {
-    SHA1 sum = new SHA1();
-    sum.add(name.codeUnits);
-    _getTree(this).forEach((DartCodeChild child) => sum.add(child._fileHash));
-    return _hashListToString(sum.close());
+    if (_treeHashCache == null) {
+      SHA1 sum = new SHA1();
+      sum.add(name.codeUnits);
+      _getTree(this).forEach((DartCodeChild child) => sum.add(child._fileHash));
+      return _hashListToString(sum.close());
+    }
+    return _treeHashCache;
   }
   
   void _shortenPaths() {

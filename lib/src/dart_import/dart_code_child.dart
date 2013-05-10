@@ -23,6 +23,8 @@ class DartCodeChild {
   
   /// Create DartCode object from Map object (from json.parse()).
   factory DartCodeChild.fromMap(Map map) {
+    _log("Running DartCodeChild.fromMap() for ${map[_NAME]}");
+    
     List<DartCodeChild> dependencies;
     
     if (map.containsKey(_DEPENDENCIES) && map[_DEPENDENCIES] != null) {
@@ -70,6 +72,8 @@ class DartCodeChild {
   * possible to convert a DartCode instance to an JSON string.
   */
   Map<String, Object> toJson() {
+    _log("Running toJson() for $name");
+    
     var returnMap = new Map();
     
     returnMap[_NAME] = this.name;
