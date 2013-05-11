@@ -101,4 +101,61 @@ class DartCodeDb {
   static Future<List<int>> getSourceFromHash(String hash) {
     return _sourceCache[hash];
   }
+  
+  static Future createLink(Path source, Path destination) {
+    _log("Running createLink(${source.toString()}, ${destination.toString()})");
+    
+    Completer c = new Completer();
+    
+    _log("OS found: ${Platform.operatingSystem}.");
+    if (Platform.operatingSystem == "windows") {
+      _log("Create hardlink by using 'mklink'.");
+      /* 
+       * Windows don't support symlinks (only junctions and that is only 
+       * supported if the user has the right permissions. Instead we use
+       * hardlinks on Windows (funny that is okey but not symlinks...)
+       */
+      List<String> arguments = ["/C", 
+                                "mklink", 
+                                "/H", 
+                                destination.toNativePath(), 
+                                source.toNativePath()];
+      
+      if (logging) {
+        StringBuffer sb = new StringBuffer("cmd");
+        arguments.forEach((String argument) {
+          sb.write(" $argument");
+        });
+        _log("Starting new process: ${sb.toString()}.");
+      }
+      Process.run("cmd", arguments).then((ProcessResult result) {
+        _log("Result from process for link creation:");
+        _log("     Link destination: ${destination.toNativePath()}");
+        _log("     Link source: ${source.toNativePath()}");
+        
+        if (!result.stdout.isEmpty) _log.print("     stdout: ${result.stdout}");
+        if (!result.stderr.isEmpty) _err.print("     stderr: ${result.stderr}");
+        
+        if (result.stderr.isEmpty) {
+          _log("Link succesfully created.");
+          c.complete();
+        } else {
+          throw new FileIOException("Could not create link.", result.stderr);
+        }
+      });
+      
+    } else {
+      _log("Create hardlink by using Dart own link class.");
+      
+      Link link = new Link.fromPath(destination);
+      link.create(source.toString()).then((_) {
+        _log("Link succesfully created:");
+        _log("     Link destination: ${destination.toNativePath()}");
+        _log("     Link source: ${source.toNativePath()}");
+        c.complete();
+      });
+    }
+    
+    return c.future;
+  }
 }
