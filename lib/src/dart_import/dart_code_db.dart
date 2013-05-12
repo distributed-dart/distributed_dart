@@ -133,14 +133,15 @@ class DartCodeDb {
         _log("     Link destination: ${destination.toNativePath()}");
         _log("     Link source: ${source.toNativePath()}");
         
-        if (!result.stdout.isEmpty) _log.print("     stdout: ${result.stdout}");
-        if (!result.stderr.isEmpty) _err.print("     stderr: ${result.stderr}");
+        if (!result.stdout.isEmpty) _log("     stdout: ${result.stdout}");
+        if (!result.stderr.isEmpty) _err("     stderr: ${result.stderr}");
         
         if (result.stderr.isEmpty) {
           _log("Link succesfully created.");
           c.complete();
         } else {
-          throw new FileIOException("Could not create link.", result.stderr);
+          OSError osError = new OSError(result.stderr, result.exitCode);
+          throw new FileIOException("Could not create link.", osError);
         }
       });
       
