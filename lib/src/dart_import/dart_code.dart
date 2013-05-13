@@ -113,16 +113,12 @@ class DartCode extends DartCodeChild {
                 if (!hashFileExists) {
                   // Connect to network, get the files and save them in hashes
                   return new File.fromPath(hashFilePath).create().then((_) {
-                    return DartCodeDb.createLink(hashFilePath,
-                                                 filePath,
-                                                 workDirPath);
+                    return DartCodeDb.createLink(hashFilePath, filePath);
                   });
                 }
                 
                 // Create link between hash file and the environment.
-                return DartCodeDb.createLink(hashFilePath,
-                                             filePath,
-                                             workDirPath);
+                return DartCodeDb.createLink(hashFilePath, filePath);
               });
             })).then((_) {
               // Get the full path and return it

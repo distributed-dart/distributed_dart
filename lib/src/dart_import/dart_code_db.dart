@@ -102,7 +102,7 @@ class DartCodeDb {
     return _sourceCache[hash];
   }
   
-  static Future createLink(Path source, Path destination, Path workDir) {
+  static Future createLink(Path source, Path destination) {
     _log("Running createLink(${source.toString()}, ${destination.toString()})");
     
     Completer c = new Completer();
@@ -146,17 +146,24 @@ class DartCodeDb {
       });
       
     } else {
-      _log("Create hardlink by using Dart own link class.");
+      _log("Create hardlink by using Dart own Link class.");
+      
+      StringBuffer sb = new StringBuffer();
+      for (int a = 0; a < source.segments().length; a++) {
+        sb.write("../");
+      }
+      
+      Path releativeSource = new Path(sb.toString() + source.toString());
       
       Link link = new Link.fromPath(destination);
-      link.create(source.relativeTo(workDir).toString()).then((_) {
+      link.create(releativeSource.toString()).then((_) {
         _log("Link succesfully created:");
         _log("     Link destination: ${destination.toNativePath()}");
-        _log("     Link source: ${source.toNativePath()}");
+        _log("     Link source: ${releativeSource.toNativePath()}");
         c.complete();
       });
     }
     
-    return c.future;
+   return c.future;
   }
 }
