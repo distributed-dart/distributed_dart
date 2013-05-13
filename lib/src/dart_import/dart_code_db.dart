@@ -102,12 +102,12 @@ class DartCodeDb {
     return _sourceCache[hash];
   }
   
-  static Future createLink(Path source, Path destination) {
+  static Future createLink(Path source, Path destination, Path workDir) {
     _log("Running createLink(${source.toString()}, ${destination.toString()})");
     
     Completer c = new Completer();
     
-    _log("OS found: ${Platform.operatingSystem}.");
+     _log("OS found: ${Platform.operatingSystem}.");
     if (Platform.operatingSystem == "windows") {
       _log("Create hardlink by using 'mklink'.");
       /* 
@@ -149,7 +149,7 @@ class DartCodeDb {
       _log("Create hardlink by using Dart own link class.");
       
       Link link = new Link.fromPath(destination);
-      link.create(source.toString()).then((_) {
+      link.create(source.relativeTo(workDir).toString()).then((_) {
         _log("Link succesfully created:");
         _log("     Link destination: ${destination.toNativePath()}");
         _log("     Link source: ${source.toNativePath()}");
