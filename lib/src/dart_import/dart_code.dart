@@ -108,6 +108,8 @@ class DartCode extends DartCodeChild {
               File hashFile = new File.fromPath(hashFilePath);
               
               Path filePath = spawnDirectoryPath.join(node.path);
+              _log("spawnDirectoryPath: $spawnDirectoryPath");
+              _log("node.path: ${node.path}");
               
               return hashFile.exists().then((bool hashFileExists) {
                 if (!hashFileExists) {
