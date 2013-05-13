@@ -11,65 +11,63 @@ class DartCodeDb {
     _log("Running DartCodeDb.resolve($uri, $useCache)");
     File sourceFile = new File(uri);
     
-    return sourceFile.fullPath().then((String fullPathString) {
-      Path path = new Path(fullPathString);
-      Path dir = path.directoryPath;
-      Path packageDir = dir.append("packages");
+    Path path = new Path(uri);
+    Path dir = path.directoryPath;
+    Path packageDir = dir.append("packages");
+    
+    Future<DartCodeChild> dartCode;
+    
+    if (useCache) {
+      dartCode = _pathToDartCode[path.toNativePath()];
       
-      Future<DartCodeChild> dartCode;
-      
-      if (useCache) {
-        dartCode = _pathToDartCode[path.toNativePath()];
-        
-        if (dartCode != null) {
-          return dartCode;
-        }
+      if (dartCode != null) {
+        return dartCode;
       }
+    }
 
-      dartCode = sourceFile.readAsBytes().then((List<int> bytes) {
-        // Calculate SHA1 hashsum of the file.
-        SHA1 sha1 = new SHA1();
-        sha1.add(bytes);
-        List<int> hash = sha1.close();
-        
-        // Save the file content in cache (the file content is already loaded
-        // so we can insert the value directly in the future.
-        _sourceCache[_hashListToString(hash)] = new Future.value(bytes);
-        
-        // Parse the file with the scanner and get dependencies
-        Runes runes = (new String.fromCharCodes(bytes)).runes;
-        Scanner scanner = new Scanner(runes);
-        List<String> dependencies = scanner.getDependencies();
-        
-        // Resolve each dependency to full path (and ignore dart sdk stuff)
-        return Future.wait(dependencies.where((String path) {
-          if (path.startsWith("dart:")) {
-            _log("Ignore dependency (part of Dart SDK): $path");
-            return false;
-          } else {
-            _log("Dependency found: $path"); 
-            return true;
-          }
-        }).map((String path) {
-          Path fullFilePath;
-          
-          if (path.startsWith("package:")) {
-            String pathString = path.substring("package:".length);
-            fullFilePath = packageDir.append(pathString);
-          } else {
-            fullFilePath = dir.append(path);
-          }
-          _log("    Full path is: ${fullFilePath.toNativePath()}");
-          
-          return resolve(fullFilePath.toNativePath(), useCache:useCache);
-        })).then((List<DartCodeChild> dependencies) {
-          return new DartCodeChild(path.filename, path, hash, dependencies);
-        });
-      });
+    dartCode = sourceFile.readAsBytes().then((List<int> bytes) {
+      // Calculate SHA1 hashsum of the file.
+      SHA1 sha1 = new SHA1();
+      sha1.add(bytes);
+      List<int> hash = sha1.close();
       
-      _pathToDartCode[path.toNativePath()] = dartCode;
-      return dartCode;
+      // Save the file content in cache (the file content is already loaded
+      // so we can insert the value directly in the future.
+      _sourceCache[_hashListToString(hash)] = new Future.value(bytes);
+      
+      // Parse the file with the scanner and get dependencies
+      Runes runes = (new String.fromCharCodes(bytes)).runes;
+      Scanner scanner = new Scanner(runes);
+      List<String> dependencies = scanner.getDependencies();
+      
+      // Resolve each dependency to full path (and ignore dart sdk stuff)
+      return Future.wait(dependencies.where((String path) {
+        if (path.startsWith("dart:")) {
+          _log("Ignore dependency (part of Dart SDK): $path");
+          return false;
+        } else {
+          _log("Dependency found: $path"); 
+          return true;
+        }
+      }).map((String path) {
+        Path fullFilePath;
+        
+        if (path.startsWith("package:")) {
+          String pathString = path.substring("package:".length);
+          fullFilePath = packageDir.append(pathString);
+        } else {
+          fullFilePath = dir.append(path);
+        }
+        _log("    Full path is: ${fullFilePath.toNativePath()}");
+        
+        return resolve(fullFilePath.toNativePath(), useCache:useCache);
+      })).then((List<DartCodeChild> dependencies) {
+        return new DartCodeChild(path.filename, path, hash, dependencies);
+      });
     });
+      
+    _pathToDartCode[path.toNativePath()] = dartCode;
+    return dartCode;
   }
   
   static void clearCache() {
