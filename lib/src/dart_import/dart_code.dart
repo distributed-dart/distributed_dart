@@ -60,6 +60,80 @@ class DartCode extends DartCodeChild {
     return new DartCode.fromDartCodeChild(new DartCodeChild.fromMap(map));
   }
   
+  Future<String> createSpawnUriEnvironment() {
+    Completer c = new Completer();
+    
+    Path workDirPath           = new Path(workDir);
+    Path hashDirPath           = workDirPath.append("hashes/");
+    Path isolateDirectoryPath  = workDirPath.append("isolates/");
+    
+    Directory hashDirectory    = new Directory.fromPath(hashDirPath);
+    Directory isolateDirectory = new Directory.fromPath(isolateDirectoryPath);
+    
+    Future createHashDirFuture    = hashDirectory.create(recursive:true);
+    Future createIsolateDirFuture = isolateDirectory.create(recursive:true);
+    
+    Future.wait([createHashDirFuture, createIsolateDirFuture]).then((_) {
+      Path spawnDirectoryPath = isolateDirectoryPath.append(this.treeHash);
+      File spawnFile = new File.fromPath(spawnDirectoryPath.join(this.path));
+      
+      _log(spawnFile.path);
+      
+      spawnFile.exists().then((bool fileExists) {
+        if (fileExists) {
+          // Get the full path and return it
+          spawnFile.fullPath().then((String fullPath) {
+            c.complete(fullPath);
+          });
+        } else {
+          List<DartCodeChild> allFiles = _getTree(this);
+          Set<Path> directoriesToCreate = new Set<Path>(); 
+
+          // Create list of directories there is needed
+          allFiles.forEach((DartCodeChild node) {
+            Path directory = spawnDirectoryPath.join(node.path).directoryPath;
+            directoriesToCreate.add(directory);
+          });
+          
+          // Create needed directories
+          Future.wait(directoriesToCreate.map((Path directoryPath) {
+            Directory directory = new Directory.fromPath(directoryPath);
+            return directory.create(recursive:true);
+          })).then((_) {
+            // This step insert the files into the environment. First its try
+            // find the files in the HashDir and if this is not possible the
+            // file will be downloaded from the network.
+            Future.wait(allFiles.map((DartCodeChild node) {
+              Path hashFilePath = hashDirPath.append("${node.fileHash}.dart");
+              File hashFile = new File.fromPath(hashFilePath);
+              
+              Path filePath = spawnDirectoryPath.join(node.path);
+              
+              return hashFile.exists().then((bool hashFileExists) {
+                if (!hashFileExists) {
+                  // Connect to network, get the files and save them in hashes
+                  return new File.fromPath(hashFilePath).create().then((_) {
+                    return DartCodeDb.createLink(hashFilePath, filePath);
+                  });
+                }
+                
+                // Create link between hash file and the environment.
+                return DartCodeDb.createLink(hashFilePath, filePath);
+              });
+            })).then((_) {
+              // Get the full path and return it
+              spawnFile.fullPath().then((String fullPath) {
+                c.complete(fullPath);
+              });
+            });
+          });
+        }
+      });
+    });
+    
+    return c.future;
+  }
+  
   /*
    *  Because the operation can be a little CPU intensive we save this. There
    *  are no risks involved because the hashsum of each dependency of the 

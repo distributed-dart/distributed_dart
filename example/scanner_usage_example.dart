@@ -47,6 +47,8 @@ void main() {
       if (code.treeHash == new dist.DartCode.fromJson(jcode).fileHash) {
         print("Hurra!");
       }
+      
+      code.createSpawnUriEnvironment().then((x) => print(x));
     });
   });
 }
