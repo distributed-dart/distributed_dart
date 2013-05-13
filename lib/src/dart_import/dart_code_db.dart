@@ -146,7 +146,7 @@ class DartCodeDb {
     } else {
       _log("Create hardlink by using Dart own Link class.");
       
-      StringBuffer sb = new StringBuffer("../");
+      StringBuffer sb = new StringBuffer("");
       for (int a = 0; a < source.segments().length; a++) {
         sb.write("../");
       }
