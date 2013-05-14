@@ -21,7 +21,7 @@ part 'src/network/requesthandler.dart';
 part 'src/network/streamtransformations.dart';
 
 bool _workDirInUse = false;
-String _workDir = ".distribued_dart_data/";
+String _workDir = ".distributed_dart_data/";
 
 set workDir(String path) {
   if (_workDirInUse) {
