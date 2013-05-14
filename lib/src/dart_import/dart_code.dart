@@ -27,6 +27,9 @@ class DartCode extends DartCodeChild {
   /**
    * Create DartCode object from URI to a valid Dart program. The DartCode
    * object contains information about all dependencies for the program.
+   * 
+   * [useCache] should be set to false if some of the files has been changed
+   * on the filesystem while the program has been running.
    */
   static Future<DartCode> resolve(String uri, {bool useCache: true}) {
     _log("Running resolve($uri, $useCache)");
