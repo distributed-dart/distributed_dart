@@ -145,10 +145,21 @@ class DartCodeDb {
     return dartCode;
   }
   
-  static void clearCache({bool removeHashToPathCache:false}) {
-    if (removeHashToPathCache) {
+  /**
+   * Clear the cache containing the content of files there has been read before.
+   * The reason why there is only one method is it doesn’t make much sense to 
+   * clear the other caches without clean the file content cache.
+   */
+  static void clearFileContentCache({bool clearHashToPathCache:false,
+                                     bool clearDartCodeCache:false}) {
+    if (clearHashToPathCache) {
       _hashToPathCache.clear();
     }
+    
+    if (clearDartCodeCache) {
+      _pathToDartCode.clear();
+    }
+    
     _sourceCache.clear();
   }
   
