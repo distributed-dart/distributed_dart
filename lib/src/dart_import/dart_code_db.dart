@@ -37,6 +37,20 @@ class DartCodeDb {
    */
   static Map<String,Path> _hashToPathCache = new Map();
   
+  /**
+   * **NOTE: This method is not implemented correctly right now!**
+   * 
+   * Instead of getting the content from the disk it should take a network 
+   * object and use it to send a request for the file content (and save it 
+   * locally after). The reason for current foolish implementation is to test 
+   * if things work without the network implementation finished.
+   * 
+   * Download file requests by create a network request, send it to the network 
+   * and wait for the answer. When all the files is downloaded it is saved to 
+   * the disk locally and linked to the right directories as described in the 
+   * [RequestBundle] objects. The returned [Future] is finished when all steps 
+   * in the process is finished.
+   */
   static Future downloadFilesAndCreateLinks(List<RequestBundle> requests) {
     if (logging) {
       _log("Running downloadFilesAndCreateLinks(");
@@ -58,6 +72,16 @@ class DartCodeDb {
     }));
   }
   
+  /**
+   * Resolve a URI into a [DartCodeChild] object. This method looks like the 
+   * same as [DartCode.resolve] but the main difference is this method returns 
+   * a [DartCodeChild] object when the [DartCode.resolve] method returns a 
+   * [DartCode] object. The reason for this design is [DartCodeDb.resolve] is 
+   * designed to be called recursive.
+   * 
+   * [useCache] should be set to false if some of the files has been changed
+   * on the filesystem while the program has been running.
+   */
   static Future<DartCodeChild> resolve(String uri, {bool useCache: true} ) {
     _log("Running DartCodeDb.resolve($uri, $useCache)");
     File sourceFile = new File(uri);
