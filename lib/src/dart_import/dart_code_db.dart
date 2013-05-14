@@ -141,7 +141,7 @@ class DartCodeDb {
       });
     });
       
-    _pathToDartCode[path.toNativePath()] = dartCode;
+    _pathToDartCode[path] = dartCode;
     return dartCode;
   }
   
