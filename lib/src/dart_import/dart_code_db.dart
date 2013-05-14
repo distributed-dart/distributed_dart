@@ -1,11 +1,41 @@
 part of distributed_dart;
 
+/**
+ * Contains only static methods and variables (but is placed inside a class to 
+ * encapsulate). The purpose of these methods is to give access to various IO 
+ * operations in the library.
+ * 
+ * Another detail is the class also contains static data to be used as cache in 
+ * various places. The cache contains content from files there have been loaded 
+ * before. The purpose is to give fast access to this data without waiting for 
+ * the disk.
+ */
 class DartCodeDb {
-  // Full path is the key
-  static Map<String,Future<DartCodeChild>> _pathToDartCode = new Map();
+  /*
+   * Resolve a given Path into a cached DartCodeChild instance. If a Path is 
+   * already parsed one time we don’t need to do it again.
+   * 
+   * Path => DartCodeChild instance (as future)
+   */
+  static Map<Path,Future<DartCodeChild>> _pathToDartCode = new Map();
   
-  // Hash => Source code as List<int>
+  /*
+   * Resolve a given hash checksum value into to content of the file. Because we 
+   * know the file must have been read one time before (when created 
+   * DartCodeChild object) we can use this cache when trying to send files to 
+   * other machines on the network.
+   * 
+   * Hash => Source code as List<int> (as future)
+   */
   static Map<String,Future<List<int>>> _sourceCache = new Map();
+  
+  /*
+   * The purpose of this cache is to resolve the path of a given hash sum 
+   * in the case of the cache has been emptied (several possible reasons for 
+   * doing this). By clean the cache the program doesn’t contains the content 
+   * of the file but we still want to be able to give access to the content.
+   */
+  static Map<String,Path> _hashToPathCache = new Map();
   
   static Future downloadFilesAndCreateLinks(List<RequestBundle> requests) {
     if (logging) {
@@ -39,7 +69,7 @@ class DartCodeDb {
     Future<DartCodeChild> dartCode;
     
     if (useCache) {
-      dartCode = _pathToDartCode[path.toNativePath()];
+      dartCode = _pathToDartCode[path];
       
       if (dartCode != null) {
         return dartCode;
