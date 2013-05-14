@@ -14,29 +14,39 @@ part of distributed_dart;
  * [DartCodeDb] class.
  */
 class DartCode extends DartCodeChild {
-  // Stupid hack because we can't extend and get static variables :(
-  static const String _NAME         = DartCodeChild._NAME;
-  static const String _PATH         = DartCodeChild._PATH;
-  static const String _HASH         = DartCodeChild._HASH;
-  static const String _DEPENDENCIES = DartCodeChild._DEPENDENCIES;
-  
+  /**
+   * Should only be used by DartCode related classes. Please use [resolve] to
+   * get an DartCode instance. 
+   */
   DartCode(String name, 
-           String path, 
+           Path path, 
            List<int> hash, 
            List<DartCodeChild> dependencies) 
-           : super(name,path,hash,dependencies) {
-              _shortenPaths();
-           }
-  
+           : super(name,path,hash,dependencies);
+
+  /**
+   * Create DartCode object from URI to a valid Dart program. The DartCode
+   * object contains information about all dependencies for the program.
+   */
   static Future<DartCode> resolve(String uri, {bool useCache: true}) {
-    return DartCodeDb.resolve(uri, useCache:useCache);
+    _log("Running resolve($uri, $useCache)");
+    
+    return DartCodeDb.resolve(uri, useCache:useCache).then((DartCodeChild c) {
+      DartCode code = new DartCode.fromDartCodeChild(c);
+      code._shortenPaths();
+      return code;
+    });
   }
-  
-  /// Create DartCode object from DartCodeChild.
-  DartCode.fromDartCodeChild(DartCodeChild c) : this(c.name, 
-                                                     c.path, 
-                                                     c._fileHash, 
-                                                     c.dependencies);
+           
+  /**
+   *  Create DartCode object from DartCodeChild. The purpose is to upgrade a
+   *  child node to a main node in the tree. Should only be used when you are
+   *  sure the child node is actually the program you want to run.
+   */
+  DartCode.fromDartCodeChild(DartCodeChild child) : this(child.name, 
+      child.path, 
+      child._fileHash, 
+      child._dependencies);
   
   /// Create DartCode object from JSON String.
   factory DartCode.fromJson(String jsonString) {
@@ -45,59 +55,238 @@ class DartCode extends DartCodeChild {
   
   /// Create DartCode object from Map object (from json.parse()).
   factory DartCode.fromMap(Map map) {
-    List<DartCodeChild> dependencies;
+    _log("Running DartCode.fromMap() for ${map[DartCodeChild._NAME]}");
     
-    if (map.containsKey(_DEPENDENCIES) && map[_DEPENDENCIES] != null) {
-      dependencies = new List<DartCodeChild>();
-      
-      map[_DEPENDENCIES].forEach((var dartCodeMap) {
-        if (dartCodeMap != null) {
-          dependencies.add(new DartCodeChild.fromMap(dartCodeMap));
-        }
-      });
-    }
-    
-    return new DartCode(map[_NAME], map[_PATH], map[_HASH], dependencies);
+    return new DartCode.fromDartCodeChild(new DartCodeChild.fromMap(map));
   }
   
-  /***
+  Future<String> createSpawnUriEnvironment() {
+    Completer c = new Completer();
+    
+    Path workDirPath           = new Path(workDir);
+    Path hashDirPath           = workDirPath.append("hashes/");
+    Path isolateDirectoryPath  = workDirPath.append("isolates/");
+    
+    Directory hashDirectory    = new Directory.fromPath(hashDirPath);
+    Directory isolateDirectory = new Directory.fromPath(isolateDirectoryPath);
+    
+    Future createHashDirFuture    = hashDirectory.create(recursive:true);
+    Future createIsolateDirFuture = isolateDirectory.create(recursive:true);
+    
+    Future.wait([createHashDirFuture, createIsolateDirFuture]).then((_) {
+      Path spawnDirectoryPath = isolateDirectoryPath.append(this.treeHash);
+      File spawnFile = new File.fromPath(spawnDirectoryPath.join(this.path));
+      
+      _log(spawnFile.path);
+      
+      spawnFile.exists().then((bool fileExists) {
+        if (fileExists) {
+          // Get the full path and return it
+          spawnFile.fullPath().then((String fullPath) {
+            c.complete(fullPath);
+          });
+        } else {
+          List<DartCodeChild> allFiles = _getTree(this);
+          Set<Path> directoriesToCreate = new Set<Path>(); 
+
+          // Create list of directories there is needed
+          allFiles.forEach((DartCodeChild node) {
+            Path directory = spawnDirectoryPath.join(node.path).directoryPath;
+            directoriesToCreate.add(directory);
+          });
+          
+          // Create needed directories
+          Future.wait(directoriesToCreate.map((Path directoryPath) {
+            Directory directory = new Directory.fromPath(directoryPath);
+            return directory.create(recursive:true);
+          })).then((_) {
+            // This step insert the files into the environment. First its try
+            // find the files in the HashDir and if this is not possible the
+            // file will be downloaded from the network.
+            List<RequestPackage> missingFiles = new List<RequestPackage>();
+            
+            Future.wait(allFiles.map((DartCodeChild node) {
+              Path hashFilePath = hashDirPath.append("${node.fileHash}.dart");
+              File hashFile = new File.fromPath(hashFilePath);
+              
+              Path filePath = spawnDirectoryPath.join(node.path);
+              _log("spawnDirectoryPath: $spawnDirectoryPath");
+              _log("node.path: ${node.path}");
+              
+              return hashFile.exists().then((bool hashFileExists) {
+                if (!hashFileExists) {
+                  // Add file to list of files to download
+                  _log("Add missing file to download list: ${node.name}");
+                  missingFiles.add(new RequestPackage(node.fileHash,
+                                                       hashFilePath, filePath));
+                  return;
+                } else {
+                  // Create link between hash file and the environment.
+                  _log("Hashfile found in cache for: ${node.name}");
+                  return DartCodeDb.createLink(hashFilePath, filePath);
+                }
+              });
+            })).then((_) {
+              if (missingFiles.length > 0) {
+                _log("Download missing files from network:");
+                DartCodeDb.downloadFilesAndCreateLinks(missingFiles).then((_) {
+                  spawnFile.fullPath().then((String fullPath) {
+                    c.complete(fullPath);
+                  });
+                });
+              } else {
+                // Get the full path and return it
+                spawnFile.fullPath().then((String fullPath) {
+                  c.complete(fullPath);
+                });
+              }
+            });
+          });
+        }
+      });
+    });
+    
+    return c.future;
+  }
+  
+  /*
+   *  Because the operation can be a little CPU intensive we save this. There
+   *  are no risks involved because the hashsum of each dependency of the 
+   *  DartCode can't be changed after creation of the DartCode object.
+   */
+  String _treeHashCache = null;
+  
+  /**
    * Returns a calculated SHA1 checksum for the DartCode object and all the 
    * dependencies in the tree.  The purpose of this checksum is to make sure 
    * the checksum is different if there are changes in one of the files in the 
    * tree of [DartCode] objects.
    */
   String get treeHash {
-    SHA1 sum = new SHA1();
-    sum.add(name.codeUnits);
-    sum.add(_fileHash);
-    _allChild(this).forEach((DartCodeChild child) => sum.add(child._fileHash));
-    return _hashListToString(sum.close());
+    if (_treeHashCache == null) {
+      SHA1 sum = new SHA1();
+      sum.add(name.codeUnits);
+      _getTree(this).forEach((DartCodeChild child) => sum.add(child._fileHash));
+      return _hashListToString(sum.close());
+    }
+    return _treeHashCache;
   }
   
+  /**
+   * Takes the path from the DartCode object and all dependencies and removes
+   * unnecessary parts of the path.  E.g.
+   * 
+   *     C:\Users\Dart\Code\Program.dart
+   *     C:\Users\Dart\Code\Packages\important_lib.dart
+   *     C:\Users\Dart\Code\Packages\data\model.dart
+   *     C:\Users\Dart\Code\Packages\server\database.dart
+   * 
+   * This will change the paths into:
+   * 
+   *     Program.dart
+   *     Packages\important_lib.dart
+   *     Packages\data\model.dart
+   *     Packages\server\database.dart
+   * 
+   * The purpose is to make the paths independent of the running system.
+   */
   void _shortenPaths() {
-    List<DartCodeChild> children = _allChild(this).toList(growable: false);
+    _log("Running _shortenPaths()");
+    List<DartCodeChild> dependencies = _getTree(this).toList(growable:false);
     
-    Path basePath = new Path(this.path).directoryPath;
-    int segmentsInBasePath = basePath.segments().length;
+    // Get all segments of all paths in dependencies and this DartCode instance.
+    List<List<String>> paths = dependencies.map((DartCodeChild child) {
+      return child.path.segments();
+    }).toList(growable: true);
     
-    children.forEach((DartCodeChild child) {
-      Path check = new Path(child.path).directoryPath;
-      int segmentsInCheck = check.segments().length;
-      
-      if (segmentsInCheck < segmentsInBasePath) {
-        basePath = check;
-        segmentsInBasePath = segmentsInCheck;
+    int segmentsToRemove = _countEqualSegments(paths);
+    
+    dependencies.forEach((DartCodeChild node) {
+      node._path = _removeSegmentsOfPath(node._path, segmentsToRemove);
+    });
+  }
+  
+  /**
+   * Find the number of equal segments in a list of segments:
+   * 
+   *     List1 = [ "c", "Program Files", "Admin" ]
+   *     List2 = [ "c", "Users", "Admin", "Test Data" ]
+   *     List3 = [ "c", "Users", "Admin" ]
+   * 
+   * In this example we should return 1 because only 1 segment is equal in all
+   * lists. We don't count equal segments after the first found of non-equal
+   * list of segments (so "Admin" will not count here").
+   */
+  int _countEqualSegments(List<List<String>> paths) {
+    _log("Running _countEqualSegments(");
+    paths.forEach((List<String> x) => _log("     $x"));
+    _log(");");
+    
+    int minSegmentLength = paths[0].length;
+    
+    // Get the size of the shortest list
+    paths.forEach((List<String> segments) {
+      if (segments.length < minSegmentLength) {
+        minSegmentLength = segments.length;
       }
     });
     
-    children.forEach((DartCodeChild child) {
-      child._path = new Path(child.path).relativeTo(basePath).toString();
-    });
+    // Find the number of equal segments in a list of segments
+    for (int i = 0; i < minSegmentLength; i++) {
+      String compareValue = paths[0][i];
+      
+      for (int k = 0; k < paths.length; k++) {
+        if (paths[k][i] != compareValue) {
+          _log("Return value for _countEqualSegments() = $i");
+          return i;
+        }
+      }
+    }
+    
+    _log("Return value for _countEqualSegments() = $minSegmentLength");
+    return minSegmentLength;
   }
   
-  Iterable<DartCodeChild> _allChild(DartCodeChild child) {
-    return child.dependencies.expand((DartCodeChild subChild) 
-        => subChild.dependencies.expand((DartCodeChild subsubChild) 
-            => _allChild(subsubChild)));
+  /**
+   * Removes a number of segments of a given Path and creates a new Path with
+   * the rest of segmenst. E.g.:
+   * 
+   *     Path p = new Path("C:\\User\\Dart\\Programs\\Fun\\main.dart");
+   *     p = _removeSegmentsOfPath(p,3);
+   *     p == new Path("Programs\\Fun\\main.dart");
+   */
+  Path _removeSegmentsOfPath(Path path, int segmentsToRemove) {
+    StringBuffer sb = new StringBuffer();
+    List<String> segments = path.segments();
+    
+    bool first = true;
+    
+    segments.skip(segmentsToRemove).forEach((String segment) {
+      if (first) {
+        first = false;
+      } else {
+        sb.write("/");
+      }
+      sb.write(segment);
+    });
+    
+    return new Path(sb.toString());
+  }
+  
+  /**
+   * Get a list of the DartCode object and all dependencies needed to use the
+   * DartCode object. This is not the same as [dependencies] because this method
+   * also returns all dependencies of each dependency.
+   */
+  List<DartCodeChild> _getTree(DartCodeChild node) {
+    _log("Running _getTree(${node.name})");
+    
+    List<DartCodeChild> nodes = node.dependencies.expand((DartCodeChild sub) {
+      List<DartCodeChild> list = _getTree(sub);
+      return list;
+    }).toList(growable:true);
+    nodes.add(node);
+
+    return nodes;
   }
 }

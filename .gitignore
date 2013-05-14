@@ -12,6 +12,7 @@ pubspec.lock
 packages/
 docs/
 out/
+.distributed_dart_data/
 
 ############
 ## win/mac/linux garbage files

@@ -11,6 +11,7 @@ part 'src/dart_import/util/tools.dart';
 part 'src/dart_import/dart_code.dart';
 part 'src/dart_import/dart_code_child.dart';
 part 'src/dart_import/dart_code_db.dart';
+part 'src/dart_import/download_request.dart';
 part 'src/dart_import/scanner.dart';
 part 'src/dart_import/exceptions.dart';
 
@@ -21,7 +22,7 @@ part 'src/network/requesthandler.dart';
 part 'src/network/streamtransformations.dart';
 
 bool _workDirInUse = false;
-String _workDir = ".distribued_dart_data/";
+String _workDir = ".distributed_dart_data/";
 
 set workDir(String path) {
   if (_workDirInUse) {
