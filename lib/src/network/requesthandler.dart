@@ -12,37 +12,40 @@ class RequestType {
 
 /**
   * Used to assiciate a specific data request with an appropriate
-  * reequest handler. Must be extended to be used;
+  * request handler. 
   */
-abstract class Request {
+abstract class Request implements RequestHandler{
   const int type = RequestType.Default;
 
   Request();
-  Request._dummy();
+  Request.empty();
   
-  /// [RequestHandler] implementation
-  void _requestHandler(Map request);
+  void requestHandler(Map request, Network reply);
 
   /// Test wheater to handle msg or not, based on [type]
-  void _runHandler(Map msg) {
+  void runHandler(Map msg, Network reply) {
     try {
       if (msg['type'] == this.type) 
-        _requestHandler(msg);
+        requestHandler(msg, reply);
     } catch (e) {
       _err(e);
     }
   }
 }
 
-/// requesthandlers have this format, 
-typedef void RequestHandler(Map request);
+abstract class RequestHandler {
+  const int type = RequestType.Default;
+  void requestHandler(Map request, Network reply);
+  void runHandler(Map msg, Network reply);
+}
 
 /**
   * Contains list of [RequestHandler]'s.
   */
 class RequestHandlers {
-  List<RequestHandler> _handlers = new List<Request>();
-
-  void add(Request request) => _handlers.add(request);
-  void runAll(Map req) => _handlers.forEach((h) => h(req));
+  List<RequestHandler> _handlers = [];
+  void add(RequestHandler r) => _handlers.add(r);
+  Function runAll(Network reply){
+    return (Map req) => _handlers.forEach((rh) => rh.runHandler(req, reply));
+  }
 }
