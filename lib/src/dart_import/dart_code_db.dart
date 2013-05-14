@@ -145,7 +145,10 @@ class DartCodeDb {
     return dartCode;
   }
   
-  static void clearCache() {
+  static void clearCache({bool removeHashToPathCache:false}) {
+    if (removeHashToPathTable) {
+      _hashToPathCache.clear();
+    }
     _sourceCache.clear();
   }
   
