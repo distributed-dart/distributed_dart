@@ -103,7 +103,7 @@ class DartCode extends DartCodeChild {
             // This step insert the files into the environment. First its try
             // find the files in the HashDir and if this is not possible the
             // file will be downloaded from the network.
-            List<RequestPackage> missingFiles = new List<RequestPackage>();
+            List<RequestBundle> missingFiles = new List<RequestBundle>();
             
             Future.wait(allFiles.map((DartCodeChild node) {
               Path hashFilePath = hashDirPath.append("${node.fileHash}.dart");
@@ -117,7 +117,7 @@ class DartCode extends DartCodeChild {
                 if (!hashFileExists) {
                   // Add file to list of files to download
                   _log("Add missing file to download list: ${node.name}");
-                  missingFiles.add(new RequestPackage(node.fileHash,
+                  missingFiles.add(new RequestBundle(node.fileHash,
                                                        hashFilePath, filePath));
                   return;
                 } else {

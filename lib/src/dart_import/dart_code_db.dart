@@ -7,17 +7,17 @@ class DartCodeDb {
   // Hash => Source code as List<int>
   static Map<String,Future<List<int>>> _sourceCache = new Map();
   
-  static Future downloadFilesAndCreateLinks(List<RequestPackage> requests) {
+  static Future downloadFilesAndCreateLinks(List<RequestBundle> requests) {
     if (logging) {
       _log("Running downloadFilesAndCreateLinks(");
-      requests.forEach((RequestPackage r) {
+      requests.forEach((RequestBundle r) {
         _log("     ${r.hash}:");
         _log("        hashFilePath: ${r.hashFilePath}");
         _log("        filePath:     ${r.filePath}");
       });
     }
     
-    return Future.wait(requests.map((RequestPackage r) {
+    return Future.wait(requests.map((RequestBundle r) {
       return getSourceFromHash(r.hash).then((List<int> fileContent) {
         File newFile = new File.fromPath(r.hashFilePath);
         
