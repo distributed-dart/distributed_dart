@@ -206,28 +206,6 @@ class DartCodeDb {
     }
   }
   
-//  static Future<List<int>> getSource(DartCode code) {
-//    String hash = code.fileHash;
-//    Future<List<int>> sourceCode = _sourceCache[hash];
-//    
-//    if (sourceCode == null) {
-//      File sourceFile = new File.fromPath(code.path);
-//      sourceCode = sourceFile.readAsBytes().then((List<int> content) {
-//        SHA1 sum = new SHA1();
-//        sum.add(content);
-//        
-//        if (_compareLists(sum.close(), code.fileHashAsList) == false) {
-//          throw new FileChangedException();
-//        } else {
-//          return content;
-//        }
-//      });
-//      _sourceCache[hash] = sourceCode;
-//    }
-//    
-//    return sourceCode;
-//  }
-  
   static Future createLink(Path source, Path destination) {
     _log("Running createLink(${source.toString()}, ${destination.toString()})");
     
