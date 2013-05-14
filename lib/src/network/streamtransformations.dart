@@ -69,3 +69,71 @@ class JsonDecoder extends StreamEventTransformer<String, dynamic> {
     sink.add(json.parse(data));
   }
 }
+
+class JsonCyclicError implements Exception {
+  final String message;
+  const JsonCyclicError([this.message = ""]);
+  String toString() => "Cyclic error!: $message";
+}
+
+class NotSerializableObjectException implements Exception {
+  final String message;
+  const NotSerializableObjectException([this.message = ""]);
+  String toString() => "NotSerializableObjectException: $message";
+}
+
+// Gift from Jacob. Should definitely just made ​​a little about fit into the rest
+class IsolateCommunication {
+  List<Object> seen = new List<Object>();
+  
+  void checkCycle(final object) {
+    seen.forEach((Object o) {
+      if (identical(o, object)) {
+        throw new JsonCyclicError(object.toString());
+      }     
+    });
+    seen.add(object);
+  }
+
+  Object scanAndReplaceObject(Object object) {
+    if (object is num) {
+      return object;
+    } else if (object is bool) {
+      return object;
+    } else if (object == null) {
+      return object;
+    } else if (object is String) {
+      return object;
+    } else if (object is List) {
+      checkCycle(object);
+      List a = object;
+      if (a.length > 0) {
+        a = a.map((Object o) {
+          return scanAndReplaceObject(o);
+        }).toList(growable:false);
+      }
+      seen.remove(object);
+      return object;
+    } else if (object is Map) {
+      checkCycle(object);
+      Map<String, Object> m = object;
+      
+      m.keys.forEach((String key) {
+        if (key is String) {
+          m[key] = scanAndReplaceObject(m[key]);
+        } else {
+          throw new NotSerializableObjectException("Key must be string.");
+        }
+      });
+      seen.remove(object);
+      return object;
+    } else if (object is SendPort) {
+      // IMPORTANT!!!
+      // OBJECT IS A SENDPORT SO REPLACE IT AND RETURN THE NEW VALUE!!!
+      return object;
+    } else {
+      String m = "Not serializable type: ${object.runtimeType}";
+      throw new NotSerializableObjectException(m);
+    }
+  }
+}
