@@ -7,7 +7,7 @@ part of distributed_dart;
  * [hashFilePath]. At last there should be created a link between [hashFilePath] 
  * and [filePath].
  */
-class RequestPackage {
+class RequestBundle {
   /// Hash value to request.
   final String hash;
   
@@ -17,8 +17,8 @@ class RequestPackage {
   /// Path to link there should link to [hashFilePath].
   final Path filePath;
   
-  /// Create a [RequestPackage] object.
-  const RequestPackage(this.hash, this.hashFilePath, this.filePath);
+  /// Create a [RequestBundle] object.
+  const RequestBundle(this.hash, this.hashFilePath, this.filePath);
   
   /// Create link a link saved as [filePath] and links to [hashFilePath].
   Future createLink() {

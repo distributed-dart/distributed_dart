@@ -1,57 +1,31 @@
 part of distributed_dart;
 
 class InvalidWorkDirException implements Exception {
-  /**
-   * A message describing the error.
-   */
   final String message;
-
-  /**
-   * Creates a new FileChangedException with an optional error [message].
-   */
   const InvalidWorkDirException([this.message = ""]);
-
   String toString() => "InvalidWorkDirException: $message";
 }
 
 class WorkDirInUseException implements Exception {
-  /**
-   * A message describing the error.
-   */
   final String message;
-
-  /**
-   * Creates a new FileChangedException with an optional error [message].
-   */
   const WorkDirInUseException([this.message = ""]);
-
-  String toString() => "InvalidWorkDirException: $message";
+  String toString() => "WorkDirInUseException: $message";
 }
 
 class FileChangedException implements Exception {
-  /**
-   * A message describing the error.
-   */
   final String message;
-
-  /**
-   * Creates a new FileChangedException with an optional error [message].
-   */
   const FileChangedException([this.message = ""]);
-
   String toString() => "FileChangedException: $message";
 }
 
-class ScannerException implements Exception {
-  /**
-   * A message describing the error.
-   */
+class FileNotFoundException implements Exception {
   final String message;
+  const FileNotFoundException([this.message = ""]);
+  String toString() => "FileNotFoundException: $message";
+}
 
-  /**
-   * Creates a new ScannerException with an optional error [message].
-   */
+class ScannerException implements Exception {
+  final String message;
   const ScannerException([this.message = ""]);
-
   String toString() => "ScannerException: $message";
 }

@@ -1,23 +1,67 @@
 part of distributed_dart;
 
+/**
+ * Contains only static methods and variables (but is placed inside a class to 
+ * encapsulate). The purpose of these methods is to give access to various IO 
+ * operations in the library.
+ * 
+ * Another detail is the class also contains static data to be used as cache in 
+ * various places. The cache contains content from files there have been loaded 
+ * before. The purpose is to give fast access to this data without waiting for 
+ * the disk.
+ */
 class DartCodeDb {
-  // Full path is the key
-  static Map<String,Future<DartCodeChild>> _pathToDartCode = new Map();
+  /*
+   * Resolve a given Path into a cached DartCodeChild instance. If a Path is 
+   * already parsed one time we don’t need to do it again.
+   * 
+   * Path => DartCodeChild instance (as future)
+   */
+  static Map<Path,Future<DartCodeChild>> _pathToDartCode = new Map();
   
-  // Hash => Source code as List<int>
+  /*
+   * Resolve a given hash checksum value into to content of the file. Because we 
+   * know the file must have been read one time before (when created 
+   * DartCodeChild object) we can use this cache when trying to send files to 
+   * other machines on the network.
+   * 
+   * Hash => Source code as List<int> (as future)
+   */
   static Map<String,Future<List<int>>> _sourceCache = new Map();
   
-  static Future downloadFilesAndCreateLinks(List<RequestPackage> requests) {
+  /*
+   * The purpose of this cache is to resolve the path of a given hash sum 
+   * in the case of the cache has been emptied (several possible reasons for 
+   * doing this). By clean the cache the program doesn’t contains the content 
+   * of the file but we still want to be able to give access to the content.
+   */
+  static Map<String,Path> _hashToPathCache = new Map();
+  
+  /**
+   * **NOTE: This method is not implemented correctly right now!**
+   * 
+   * Instead of getting the content from the disk it should take a network 
+   * object and use it to send a request for the file content (and save it 
+   * locally after). The reason for current foolish implementation is to test 
+   * if things work without the network implementation finished.
+   * 
+   * Download file requests by create a network request, send it to the network 
+   * and wait for the answer. When all the files is downloaded it is saved to 
+   * the disk locally and linked to the right directories as described in the 
+   * [RequestBundle] objects. The returned [Future] is finished when all steps 
+   * in the process is finished.
+   */
+  static Future downloadFilesAndCreateLinks(List<RequestBundle> requests) {
     if (logging) {
       _log("Running downloadFilesAndCreateLinks(");
-      requests.forEach((RequestPackage r) {
+      requests.forEach((RequestBundle r) {
         _log("     ${r.hash}:");
         _log("        hashFilePath: ${r.hashFilePath}");
         _log("        filePath:     ${r.filePath}");
       });
     }
     
-    return Future.wait(requests.map((RequestPackage r) {
+    return Future.wait(requests.map((RequestBundle r) {
       return getSourceFromHash(r.hash).then((List<int> fileContent) {
         File newFile = new File.fromPath(r.hashFilePath);
         
@@ -28,6 +72,16 @@ class DartCodeDb {
     }));
   }
   
+  /**
+   * Resolve a URI into a [DartCodeChild] object. This method looks like the 
+   * same as [DartCode.resolve] but the main difference is this method returns 
+   * a [DartCodeChild] object when the [DartCode.resolve] method returns a 
+   * [DartCode] object. The reason for this design is [DartCodeDb.resolve] is 
+   * designed to be called recursive.
+   * 
+   * [useCache] should be set to false if some of the files has been changed
+   * on the filesystem while the program has been running.
+   */
   static Future<DartCodeChild> resolve(String uri, {bool useCache: true} ) {
     _log("Running DartCodeDb.resolve($uri, $useCache)");
     File sourceFile = new File(uri);
@@ -39,7 +93,7 @@ class DartCodeDb {
     Future<DartCodeChild> dartCode;
     
     if (useCache) {
-      dartCode = _pathToDartCode[path.toNativePath()];
+      dartCode = _pathToDartCode[path];
       
       if (dartCode != null) {
         return dartCode;
@@ -87,38 +141,69 @@ class DartCodeDb {
       });
     });
       
-    _pathToDartCode[path.toNativePath()] = dartCode;
+    _pathToDartCode[path] = dartCode;
     return dartCode;
   }
   
-  static void clearCache() {
+  /**
+   * Clear the cache containing the content of files there has been read before.
+   * The reason why there is only one method is it doesn’t make much sense to 
+   * clear the other caches without clean the file content cache.
+   */
+  static void clearFileContentCache({bool clearHashToPathCache:false,
+                                     bool clearDartCodeCache:false}) {
+    if (clearHashToPathCache) {
+      _hashToPathCache.clear();
+    }
+    
+    if (clearDartCodeCache) {
+      _pathToDartCode.clear();
+    }
+    
     _sourceCache.clear();
   }
   
-  static Future<List<int>> getSource(DartCode code) {
-    String hash = code.fileHash;
-    Future<List<int>> sourceCode = _sourceCache[hash];
-    
-    if (sourceCode == null) {
-      File sourceFile = new File.fromPath(code.path);
-      sourceCode = sourceFile.readAsBytes().then((List<int> content) {
-        SHA1 sum = new SHA1();
-        sum.add(content);
-        
-        if (_compareLists(sum.close(), code.fileHashAsList) == false) {
-          throw new FileChangedException();
-        } else {
-          return content;
-        }
-      });
-      _sourceCache[hash] = sourceCode;
-    }
-    
-    return sourceCode;
-  }
-  
   static Future<List<int>> getSourceFromHash(String hash) {
-    return _sourceCache[hash];
+    Future<List<int>> cacheContent = _sourceCache[hash];
+    
+    if (cacheContent != null) {
+      // We are lucky. The file is directly found in the file content cache.
+      return cacheContent;
+    } else {
+      Path contentPath = _hashToPathCache[hash];
+      
+      if (contentPath != null) {
+        // The file is not found in cache but the path is. Now we try read from
+        // the path.
+        File contentFile = new File.fromPath(contentPath);
+        
+        return contentFile.readAsBytes().then((List<int> fileContent) {
+          SHA1 sha1 = new SHA1();
+          sha1.add(fileContent);
+          String newHash = _hashListToString(sha1.close());
+          
+          if (hash == newHash) {
+            // The file has not changed from last time we read it so we 
+            // can use it.
+            return new Future.value(fileContent);
+          } else {
+            /*
+             * Well this is awkward. The file has changed and we don’t know the 
+             * placement of another file with the same hash checksum. We need to
+             * throw an exception.
+             */
+            String e = "Hash of the file has changed: Old=$hash New=$newHash";
+            throw new FileChangedException("Hash sum is not the same. $e");
+          }
+        });
+        
+      } else {
+        // The file is not found in the cache and we don't have en path of it
+        // in the _hashToPathCache. Well, time to return an exception.
+        String e = "Could not find a file with hash: $hash";
+        throw new FileNotFoundException(e);
+      }
+    }
   }
   
   static Future createLink(Path source, Path destination) {
