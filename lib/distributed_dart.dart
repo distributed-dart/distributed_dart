@@ -11,6 +11,7 @@ part 'src/dart_import/util/tools.dart';
 part 'src/dart_import/dart_code.dart';
 part 'src/dart_import/dart_code_child.dart';
 part 'src/dart_import/dart_code_db.dart';
+part 'src/dart_import/download_request.dart';
 part 'src/dart_import/scanner.dart';
 part 'src/dart_import/exceptions.dart';
 

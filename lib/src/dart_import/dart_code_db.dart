@@ -1,17 +1,5 @@
 part of distributed_dart;
 
-class DownloadRequest {
-  final String hash;
-  final Path hashFilePath;
-  final Path filePath;
-  
-  const DownloadRequest(this.hash, this.hashFilePath, this.filePath);
-  
-  Future createLink() {
-    DartCodeDb.createLink(this.hashFilePath, this.filePath);
-  }
-}
-
 class DartCodeDb {
   // Full path is the key
   static Map<String,Future<DartCodeChild>> _pathToDartCode = new Map();
@@ -19,17 +7,17 @@ class DartCodeDb {
   // Hash => Source code as List<int>
   static Map<String,Future<List<int>>> _sourceCache = new Map();
   
-  static Future downloadFilesAndCreateLinks(List<DownloadRequest> requests) {
+  static Future downloadFilesAndCreateLinks(List<RequestPackage> requests) {
     if (logging) {
       _log("Running downloadFilesAndCreateLinks(");
-      requests.forEach((DownloadRequest r) {
+      requests.forEach((RequestPackage r) {
         _log("     ${r.hash}:");
         _log("        hashFilePath: ${r.hashFilePath}");
         _log("        filePath:     ${r.filePath}");
       });
     }
     
-    return Future.wait(requests.map((DownloadRequest r) {
+    return Future.wait(requests.map((RequestPackage r) {
       return getSourceFromHash(r.hash).then((List<int> fileContent) {
         File newFile = new File.fromPath(r.hashFilePath);
         
