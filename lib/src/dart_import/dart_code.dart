@@ -103,6 +103,8 @@ class DartCode extends DartCodeChild {
             // This step insert the files into the environment. First its try
             // find the files in the HashDir and if this is not possible the
             // file will be downloaded from the network.
+            List<DownloadRequest> missingFiles = new List<DownloadRequest>();
+            
             Future.wait(allFiles.map((DartCodeChild node) {
               Path hashFilePath = hashDirPath.append("${node.fileHash}.dart");
               File hashFile = new File.fromPath(hashFilePath);
@@ -113,20 +115,31 @@ class DartCode extends DartCodeChild {
               
               return hashFile.exists().then((bool hashFileExists) {
                 if (!hashFileExists) {
-                  // Connect to network, get the files and save them in hashes
-                  return new File.fromPath(hashFilePath).create().then((_) {
-                    return DartCodeDb.createLink(hashFilePath, filePath);
-                  });
+                  // Add file to list of files to download
+                  _log("Add missing file to download list: ${node.name}");
+                  missingFiles.add(new DownloadRequest(node.fileHash,
+                                                       hashFilePath, filePath));
+                  return;
+                } else {
+                  // Create link between hash file and the environment.
+                  _log("Hashfile found in cache for: ${node.name}");
+                  return DartCodeDb.createLink(hashFilePath, filePath);
                 }
-                
-                // Create link between hash file and the environment.
-                return DartCodeDb.createLink(hashFilePath, filePath);
               });
             })).then((_) {
-              // Get the full path and return it
-              spawnFile.fullPath().then((String fullPath) {
-                c.complete(fullPath);
-              });
+              if (missingFiles.length > 0) {
+                _log("Download missing files from network:");
+                DartCodeDb.downloadFilesAndCreateLinks(missingFiles).then((_) {
+                  spawnFile.fullPath().then((String fullPath) {
+                    c.complete(fullPath);
+                  });
+                });
+              } else {
+                // Get the full path and return it
+                spawnFile.fullPath().then((String fullPath) {
+                  c.complete(fullPath);
+                });
+              }
             });
           });
         }

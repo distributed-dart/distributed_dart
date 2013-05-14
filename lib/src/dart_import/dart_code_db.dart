@@ -1,11 +1,44 @@
 part of distributed_dart;
 
+class DownloadRequest {
+  final String hash;
+  final Path hashFilePath;
+  final Path filePath;
+  
+  const DownloadRequest(this.hash, this.hashFilePath, this.filePath);
+  
+  Future createLink() {
+    DartCodeDb.createLink(this.hashFilePath, this.filePath);
+  }
+}
+
 class DartCodeDb {
   // Full path is the key
   static Map<String,Future<DartCodeChild>> _pathToDartCode = new Map();
   
   // Hash => Source code as List<int>
   static Map<String,Future<List<int>>> _sourceCache = new Map();
+  
+  static Future downloadFilesAndCreateLinks(List<DownloadRequest> requests) {
+    if (logging) {
+      _log("Running downloadFilesAndCreateLinks(");
+      requests.forEach((DownloadRequest r) {
+        _log("     ${r.hash}:");
+        _log("        hashFilePath: ${r.hashFilePath}");
+        _log("        filePath:     ${r.filePath}");
+      });
+    }
+    
+    return Future.wait(requests.map((DownloadRequest r) {
+      return getSourceFromHash(r.hash).then((List<int> fileContent) {
+        File newFile = new File.fromPath(r.hashFilePath);
+        
+        return newFile.writeAsBytes(fileContent).then((_) {
+          return r.createLink();
+        });
+      });
+    }));
+  }
   
   static Future<DartCodeChild> resolve(String uri, {bool useCache: true} ) {
     _log("Running DartCodeDb.resolve($uri, $useCache)");
@@ -113,9 +146,9 @@ class DartCodeDb {
        * supported if the user has the right permissions. Instead we use
        * hardlinks on Windows (funny that is okey but not symlinks...)
        */
-      List<String> arguments = ["/C", 
-                                "mklink", 
-                                "/H", 
+      List<String> arguments = ["/C",
+                                "mklink",
+                                "/H",
                                 destination.toNativePath(), 
                                 source.toNativePath()];
       
