@@ -163,31 +163,70 @@ class DartCodeDb {
     _sourceCache.clear();
   }
   
-  static Future<List<int>> getSource(DartCode code) {
-    String hash = code.fileHash;
-    Future<List<int>> sourceCode = _sourceCache[hash];
+  static Future<List<int>> getSourceFromHash(String hash) {
+    Future<List<int>> cacheContent = _sourceCache[hash];
     
-    if (sourceCode == null) {
-      File sourceFile = new File.fromPath(code.path);
-      sourceCode = sourceFile.readAsBytes().then((List<int> content) {
-        SHA1 sum = new SHA1();
-        sum.add(content);
+    if (cacheContent != null) {
+      // We are lucky. The file is directly found in the file content cache.
+      return cacheContent;
+    } else {
+      Path contentPath = _hashToPathCache[hash];
+      
+      if (contentPath != null) {
+        // The file is not found in cache but the path is. Now we try read from
+        // the path.
+        File contentFile = new File.fromPath(contentPath);
         
-        if (_compareLists(sum.close(), code.fileHashAsList) == false) {
-          throw new FileChangedException();
-        } else {
-          return content;
-        }
-      });
-      _sourceCache[hash] = sourceCode;
+        return contentFile.readAsBytes().then((List<int> fileContent) {
+          SHA1 sha1 = new SHA1();
+          sha1.add(fileContent);
+          String newHash = _hashListToString(sha1.close());
+          
+          if (hash == newHash) {
+            // The file has not changed from last time we read it so we 
+            // can use it.
+            return new Future.value(fileContent);
+          } else {
+            /*
+             * Well this is awkward. The file has changed and we don’t know the 
+             * placement of another file with the same hash checksum. We need to
+             * throw an exception.
+             */
+            String e = "Hash of the file has changed: Old=$hash New=$newHash";
+            throw new FileChangedException("Hash sum is not the same. $e");
+          }
+        });
+        
+      } else {
+        // The file is not found in the cache and we don't have en path of it
+        // in the _hashToPathCache. Well, time to return an exception.
+        String e = "Could not find a file with hash: $hash";
+        throw new FileNotFoundException(e);
+      }
     }
-    
-    return sourceCode;
   }
   
-  static Future<List<int>> getSourceFromHash(String hash) {
-    return _sourceCache[hash];
-  }
+//  static Future<List<int>> getSource(DartCode code) {
+//    String hash = code.fileHash;
+//    Future<List<int>> sourceCode = _sourceCache[hash];
+//    
+//    if (sourceCode == null) {
+//      File sourceFile = new File.fromPath(code.path);
+//      sourceCode = sourceFile.readAsBytes().then((List<int> content) {
+//        SHA1 sum = new SHA1();
+//        sum.add(content);
+//        
+//        if (_compareLists(sum.close(), code.fileHashAsList) == false) {
+//          throw new FileChangedException();
+//        } else {
+//          return content;
+//        }
+//      });
+//      _sourceCache[hash] = sourceCode;
+//    }
+//    
+//    return sourceCode;
+//  }
   
   static Future createLink(Path source, Path destination) {
     _log("Running createLink(${source.toString()}, ${destination.toString()})");
