@@ -1,66 +1,61 @@
 part of distributed_dart;
 
-class Host {
-  final String addr;
-  final int port;
-  String toString() => "$addr:$port";
-  Host(this.addr, this.port);
+/// data on stream is encoded and sent to socket
+_outgoing(Stream stream, Socket socket){
+  stream
+   .transform(new JsonEncoder())
+   .transform(new StringEncoder())
+   .transform(new ByteListEncoder())
+   .transform(new ZLibDeflater());
+   .listen(socket.add);
+}
+
+/// data on socket is passed to messagehandlers
+_incomming(Socket socket, messagehandlers){
+  socket
+    .transform(new ZLibInflater())
+    .transform(new ByteListDecoder())
+    .transform(new StringDecoder())
+    .transform(new JsonDecoder())
+    .listen(messagehandlers.runAll);
 }
 
 class Server {
-  var handlerList = new RequestHandlerList();
+  RequestHandlers _handlers = new RequestHandlers();
 
   Server(){
     ServerSocket.bind('0.0.0.0',12345).then(
         (serversocket) => serversocket.listen(
-          _onConnection,
+          (socket) => _incomming(socket, handlerList),
           onError: (e) => _err("ServerSocket Error: $e")));
-  }
-
-  addHandler(int type, RequestHandler h) => handlerList.add(type,h);
-
-  _onConnection(Socket client){
-    client
-      .transform(new ZLibInflater())
-      .transform(new ByteListDecoder())
-      .transform(new StringDecoder())
-      .transform(new JsonDecoder())
-      .listen(handlerList.runAll);
   }
 }
 
 class Network {
-  Socket _socket;
-  Completer _socketReady = new Completer();
-  static Server server = new Server();
-  static Map<String, Network> _connections = {};
+  StreamController _sc = new StreamController();
+  RequestHandlers _handlers = new RequestHandlers();
+  InternetAddress _host;
 
-  // lookup network connection for specific isolate id
-  factory Network.isolateId(IsolateId id){
-    Host host = HostLookup.isolateId(id);
-    if( ! _connections.containsKey("$host")) {
-      _connections["$host"] = new Network._connect(host);
-    }
-    return _connections["$host"];
+  void send(dynamic data) => _sc.add(data);
+
+  _bindSocket(Socket s){
+    _outgoing(s);
+    _incomming(s);
   }
 
-  // connect to remote host, completes _socketReady on success
-  Network._connect(Host host){
-    Socket.connect(host.addr,host.port)
-      .then((s) => _socket = s)
-      .then((_) => _socketReady.complete(true));
+  Future _connect() => Socket.connect(_host).then(_bindSocket);
+
+  Network._(this._host){
+    _connect();
   }
 
-  // encodes and sends data to network connection
-  // buffers data on stream until the sockets is ready
-  void send(Stream datastream){
-    datastream
-      .transform(new JsonEncoder())
-      .transform(new StringEncoder())
-      .transform(new ByteListEncoder())
-      .transform(new ZLibDeflater())
-      .listen((d) => _socket.add(d))
-      .pause(_socketReady.future);
-  }
+  factory Network.isolateId(IsolateId id){ }
 }
 
+
+fisk(){
+
+  var handlers =new RequestHandlerList();
+  handlers.add(new SpawnIsolateRequest());
+  handlers.add(new IsolateDataRequest());
+}
