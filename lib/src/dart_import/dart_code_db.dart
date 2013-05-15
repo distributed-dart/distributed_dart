@@ -112,9 +112,9 @@ class DartCodeDb {
        *  hash with the path so we can get the path later if only knowing the
        *  hash value.
        */
-      String hash = _hashListToString(hash);
-      _sourceCache[hash] = new Future.value(bytes);
-      _hashToPathCache[hash] = path;
+      String hashString = _hashListToString(hash);
+      _sourceCache[hashString] = new Future.value(bytes);
+      _hashToPathCache[hashString] = path;
       
       // Parse the file with the scanner and get dependencies
       Runes runes = (new String.fromCharCodes(bytes)).runes;
@@ -208,8 +208,8 @@ class DartCodeDb {
              * it. If changeCache is true we are allowed to change the file
              * content cache and add the file content to this cache.
              */
-            Future<List<int>> returnValue = Future.value(fileContent);
-            if (changeCache) {
+            Future<List<int>> returnValue = new Future.value(fileContent);
+            if (canAddToCache) {
               _sourceCache[hash] = returnValue;  
             }
             return returnValue;
@@ -236,15 +236,18 @@ class DartCodeDb {
   /**
    * This method exists because Windows don’t support symlinks (or similar 
    * feature) for files without additional permissions. Because of this 
-   * restriction it is not possible to use the Dart class [Link] on Windows 
-   * systems. The purpose of the method is therefore to use different 
+   * restriction it is not possible to use the Dart class 
+   * [Link](http://api.dartlang.org/docs/releases/latest/dart_io/Link.html) on 
+   * Windows systems. The purpose of the method is therefore to use different 
    * implementation on different systems.
    * 
    * On Windows we use hardlinks because they are possible to use without 
    * additional permissions. Dart do not support creating hardlinks so we call 
-   * the mklink command from the Windows cmd instead.
+   * the [:mklink:] command from the Windows cmd instead.
    * 
-   * On all other systems we use the [Link] class to create symlinks.
+   * On all other systems we use the 
+   * [Link](http://api.dartlang.org/docs/releases/latest/dart_io/Link.html) 
+   * class to create symlinks.
    */
   static Future createLink(Path source, Path destination) {
     _log("Running createLink(${source.toString()}, ${destination.toString()})");
