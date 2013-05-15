@@ -15,9 +15,10 @@ part 'src/dart_import/download_request.dart';
 part 'src/dart_import/scanner.dart';
 part 'src/dart_import/exceptions.dart';
 
-part 'src/network/isolates.dart';
+part 'src/isolates/isolates.dart';
+part 'src/isolates/isolaterequests.dart';
+
 part 'src/network/network.dart';
-part 'src/network/placeholders.dart';
 part 'src/network/requesthandler.dart';
 part 'src/network/streamtransformations.dart';
 

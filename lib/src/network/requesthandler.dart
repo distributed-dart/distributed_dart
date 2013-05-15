@@ -5,37 +5,47 @@ part of distributed_dart;
   * If dart had Enum, this would be an Enum
   */
 class RequestType {
+  static const int Default = -1;
   static const int SpawnIsolate = 1;
   static const int IsolateData = 2;
 }
 
-typedef void RequestHandler(Map request);
-abstract class Request {
-  const int type = -1;
-}
-
 /**
-  * Contains RequestType -> List<RequestHandler> Mapping
+  * Used to assiciate a specific data request with an appropriate
+  * request handler. 
   */
-class RequestHandlerList {
+abstract class Request implements RequestHandler{
+  const int type = RequestType.Default;
 
-  Map<int, List<RequestHandler>> handlers = new Map<int, List<RequestHandler>>();
-  void add(int type, RequestHandler handler) {
+  Request();
+  Request.empty();
+  
+  void requestHandler(Map request, Network reply);
 
-    if( ! handlers.containsKey(type)){
-      handlers[type] = [];
-    }
-    handlers[type].add(handler);
-  }
-
-  runAll(Map req){
+  /// Test wheater to handle msg or not, based on [type]
+  void runHandler(Map msg, Network reply) {
     try {
-      var type = req['type'];
-      handlers[type].forEach((h) => h(req));
+      if (msg['type'] == this.type) 
+        requestHandler(msg, reply);
     } catch (e) {
       _err(e);
     }
   }
 }
 
+abstract class RequestHandler {
+  const int type = RequestType.Default;
+  void requestHandler(Map request, Network reply);
+  void runHandler(Map msg, Network reply);
+}
 
+/**
+  * Contains list of [RequestHandler]'s.
+  */
+class RequestHandlers {
+  List<RequestHandler> _handlers = [];
+  void add(RequestHandler r) => _handlers.add(r);
+  Function runAll(Network reply){
+    return (Map req) => _handlers.forEach((rh) => rh.runHandler(req, reply));
+  }
+}
