@@ -106,9 +106,15 @@ class DartCodeDb {
       sha1.add(bytes);
       List<int> hash = sha1.close();
       
-      // Save the file content in cache (the file content is already loaded
-      // so we can insert the value directly in the future.
-      _sourceCache[_hashListToString(hash)] = new Future.value(bytes);
+      /*
+       *  Save the file content in cache (the file content is already loaded
+       *  so we can insert the value directly in the future). Also map the
+       *  hash with the path so we can get the path later if only knowing the
+       *  hash value.
+       */
+      String hash = _hashListToString(hash);
+      _sourceCache[hash] = new Future.value(bytes);
+      _hashToPathCache[hash] = path;
       
       // Parse the file with the scanner and get dependencies
       Runes runes = (new String.fromCharCodes(bytes)).runes;
@@ -163,7 +169,21 @@ class DartCodeDb {
     _sourceCache.clear();
   }
   
-  static Future<List<int>> getSourceFromHash(String hash) {
+  /**
+   * Resolve hash checksum into the content of the actual file. The files there
+   * are possible to resolve is files there are already read by other pieces of
+   * code in the program.
+   * 
+   * Throw [FileChangedException] in case of the cache has been cleared and the
+   * file is changed (if the new hash checksum is not the same as the
+   * requested).
+   * 
+   * [canAddToCache] is used if the file content of the needed file is removed
+   * by cleaning the cache. By using a cache it is possible to resolve the path
+   * by using the hash. If [canAddToCache] is false the content cache will not
+   * be updated with the content of the loaded file.
+   */
+  static Future<List<int>> getSourceFromHash(String hash, {canAddToCache:true}){
     Future<List<int>> cacheContent = _sourceCache[hash];
     
     if (cacheContent != null) {
@@ -183,9 +203,16 @@ class DartCodeDb {
           String newHash = _hashListToString(sha1.close());
           
           if (hash == newHash) {
-            // The file has not changed from last time we read it so we 
-            // can use it.
-            return new Future.value(fileContent);
+            /* 
+             * The file has not changed from last time we read it so we can use
+             * it. If changeCache is true we are allowed to change the file
+             * content cache and add the file content to this cache.
+             */
+            Future<List<int>> returnValue = Future.value(fileContent);
+            if (changeCache) {
+              _sourceCache[hash] = returnValue;  
+            }
+            return returnValue;
           } else {
             /*
              * Well this is awkward. The file has changed and we don’t know the 
@@ -206,6 +233,19 @@ class DartCodeDb {
     }
   }
   
+  /**
+   * This method exists because Windows don’t support symlinks (or similar 
+   * feature) for files without additional permissions. Because of this 
+   * restriction it is not possible to use the Dart class [Link] on Windows 
+   * systems. The purpose of the method is therefore to use different 
+   * implementation on different systems.
+   * 
+   * On Windows we use hardlinks because they are possible to use without 
+   * additional permissions. Dart do not support creating hardlinks so we call 
+   * the mklink command from the Windows cmd instead.
+   * 
+   * On all other systems we use the [Link] class to create symlinks.
+   */
   static Future createLink(Path source, Path destination) {
     _log("Running createLink(${source.toString()}, ${destination.toString()})");
     
@@ -218,6 +258,9 @@ class DartCodeDb {
        * Windows don't support symlinks (only junctions and that is only 
        * supported if the user has the right permissions. Instead we use
        * hardlinks on Windows (funny that is okey but not symlinks...)
+       * 
+       * WARNING: This fix will properly not work on Windows XP because the need
+       * of the mklink command.
        */
       List<String> arguments = ["/C",
                                 "mklink",
