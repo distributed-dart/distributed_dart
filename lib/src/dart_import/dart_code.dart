@@ -102,7 +102,7 @@ class DartCode extends DartCodeChild {
             c.complete(fullPath);
           });
         } else {
-          List<DartCodeChild> allFiles = _getTree(this);
+          List<DartCodeChild> allFiles = _getTree();
           Set<Path> directoriesToCreate = new Set<Path>(); 
 
           // Create list of directories there is needed
@@ -182,7 +182,7 @@ class DartCode extends DartCodeChild {
     if (_treeHashCache == null) {
       SHA1 sum = new SHA1();
       sum.add(name.codeUnits);
-      _getTree(this).forEach((DartCodeChild child) => sum.add(child._fileHash));
+      _getTree().forEach((DartCodeChild child) => sum.add(child._fileHash));
       return _hashListToString(sum.close());
     }
     return _treeHashCache;
@@ -208,7 +208,7 @@ class DartCode extends DartCodeChild {
    */
   void _shortenPaths() {
     _log("Running _shortenPaths()");
-    List<DartCodeChild> dependencies = _getTree(this).toList(growable:false);
+    List<DartCodeChild> dependencies = _getTree().toList(growable:false);
     
     // Get all segments of all paths in dependencies and this DartCode instance.
     List<List<String>> paths = dependencies.map((DartCodeChild child) {
@@ -287,22 +287,5 @@ class DartCode extends DartCodeChild {
     });
     
     return new Path(sb.toString());
-  }
-  
-  /**
-   * Get a list of the DartCode object and all dependencies needed to use the
-   * DartCode object. This is not the same as [dependencies] because this method
-   * also returns all dependencies of each dependency.
-   */
-  List<DartCodeChild> _getTree(DartCodeChild node) {
-    _log("Running _getTree(${node.name})");
-    
-    List<DartCodeChild> nodes = node.dependencies.expand((DartCodeChild sub) {
-      List<DartCodeChild> list = _getTree(sub);
-      return list;
-    }).toList(growable:true);
-    nodes.add(node);
-
-    return nodes;
   }
 }

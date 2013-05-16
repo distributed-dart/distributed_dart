@@ -67,6 +67,38 @@ class DartCodeChild {
     return _dependencies.toList(growable: false);
   }
   
+  // Simpel cache of DartCodeChild objects. If we
+  List<DartCodeChild> _treeCache = null;
+  
+  /**
+   * Get a list of the DartCodeChild object and all dependencies needed to use 
+   * the DartCodeChild object. This is not the same as [dependencies] because 
+   * this method also returns all dependencies of each dependency.
+   */
+  List<DartCodeChild> _getTree() {
+    _log("Running _getTree(${this.name})");
+    
+    if (_treeCache != null) {
+      /*
+       * Dependency tree for X has already been calculated one time before and 
+       * we are therefore using the result from last time.
+       */
+      _log("     _getTree(${this.name}): Using cached value.");
+      return _treeCache;
+    }
+    _log("     _getTree(${this.name}): No cached value. Creating tree.");
+    
+    List<DartCodeChild> nodes = this.dependencies.expand((DartCodeChild sub) {
+      List<DartCodeChild> list = sub._getTree();
+      return list;
+    }).toList(growable:true);
+    nodes.add(this);
+
+    _log("     _getTree(${this.name}): Added value to cache.");
+    _treeCache = nodes;
+    return nodes;
+  }
+  
   /**
   * Generate Map object from DartCode instance and is required to make it
   * possible to convert a DartCode instance to an JSON string.
