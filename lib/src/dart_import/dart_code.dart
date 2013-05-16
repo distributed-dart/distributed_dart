@@ -1,8 +1,9 @@
 part of distributed_dart;
 
 /**
- * The purpose of the class is representing a Dart program and the programs 
- * dependencies. The following informations is saved inside the class:
+ * The purpose of this class is to represent a Dart program and the needed 
+ * dependencies of this program. The following informations is saved inside 
+ * the class:
  * 
  * * File Name.
  * * Full path.
@@ -11,12 +12,12 @@ part of distributed_dart;
  * 
  * Please notice the class doesn’t contains the actual source code of the
  * program. To get the source code of an [DartCode] instance please use the
- * [DartCodeDb] class.
+ * [DartCodeDb.getSourceFromHash] method.
  */
 class DartCode extends DartCodeChild {
   /**
-   * Should only be used by DartCode related classes. Please use [resolve] to
-   * get an DartCode instance. 
+   * Should only be used by DartCode related classes. Please use the [resolve] 
+   * method to get an DartCode instance.
    */
   DartCode(String name, 
            Path path, 
@@ -40,7 +41,7 @@ class DartCode extends DartCodeChild {
       return code;
     });
   }
-           
+
   /**
    *  Create DartCode object from DartCodeChild. The purpose is to upgrade a
    *  child node to a main node in the tree. Should only be used when you are
@@ -56,7 +57,7 @@ class DartCode extends DartCodeChild {
     return new DartCode.fromMap(json.parse(jsonString));
   }
   
-  /// Create DartCode object from Map object (from json.parse()).
+  /// Create DartCode object from Map object (created by e.g. json.parse()).
   factory DartCode.fromMap(Map map) {
     _log("Running DartCode.fromMap() for ${map[DartCodeChild._NAME]}");
     
