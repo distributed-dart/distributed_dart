@@ -64,12 +64,24 @@ class DartCode extends DartCodeChild {
     return new DartCode.fromDartCodeChild(new DartCodeChild.fromMap(map));
   }
   
+  /**
+   * Create an environment for the [DartCode] and all dependencies and return 
+   * the path to run (with e.g. [spawnUri]) as a [Future]. Missing files will be
+   * downloaded. The created environment will be placed in the [workDir]
+   * directory where also a cache will be created for previously dowloaded
+   * files.
+   */
   Future<String> createSpawnUriEnvironment() {
+    _log("Running createSpawnUriEnvironment()");
     Completer c = new Completer();
     
     Path workDirPath           = new Path(workDir);
     Path hashDirPath           = workDirPath.append("hashes/");
     Path isolateDirectoryPath  = workDirPath.append("isolates/");
+    
+    _log("     workDirPath          = $workDirPath");
+    _log("     hashDirPath          = $hashDirPath");
+    _log("     isolateDirectoryPath = $isolateDirectoryPath");
     
     Directory hashDirectory    = new Directory.fromPath(hashDirPath);
     Directory isolateDirectory = new Directory.fromPath(isolateDirectoryPath);
