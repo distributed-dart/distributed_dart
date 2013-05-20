@@ -116,12 +116,29 @@ class DartCodeDb {
       _sourceCache[hashString] = new Future.value(bytes);
       _hashToPathCache[hashString] = path;
       
+      String extension = path.extension.toLowerCase();
+      
+      // File there specify additional dependencies
+      if (extension == "distdartdeps") {
+        return new Stream.fromIterable([bytes]).transform(new StringDecoder())
+          .transform(new LineTransformer())
+          .transform(new StreamTransformer<String, Future<DartCodeChild>>(
+            handleData: (String depUri, EventSink<Future<DartCodeChild>> sink) {
+              String file = path.directoryPath.append(depUri).toString();
+              sink.add(resolve(file, useCache: useCache));
+          })).toList().then((List<Future<DartCodeChild>> dependencies) {
+            return Future.wait(dependencies).then((List<DartCodeChild> list) {
+              return new DartCodeChild(path.filename, path, hash, list);  
+            });
+          });
+      }
+      
       // Only scan Dart files. All other files should just be accepted.
-      if (path.extension.toLowerCase() != "dart") {
+      if (extension != "dart") {
         return new DartCodeChild(path.filename, path, hash, []);
       }
       
-      // Parse the file with the scanner and get dependencies
+      // Parse the Dart file with the scanner and get dependencies
       Runes runes = (new String.fromCharCodes(bytes)).runes;
       Scanner scanner = new Scanner(runes);
       List<String> dependencies = scanner.getDependencies();
@@ -148,7 +165,25 @@ class DartCodeDb {
         
         return resolve(fullFilePath.toNativePath(), useCache:useCache);
       })).then((List<DartCodeChild> dependencies) {
-        return new DartCodeChild(path.filename, path, hash, dependencies);
+        String deps = "$uri.distdartdeps";
+        
+        return new File(deps).exists().then((bool fileExists) {
+          if (fileExists) {
+            return resolve(deps, useCache:useCache).then((DartCodeChild child) {
+              List<DartCodeChild> newList = new List(dependencies.length+1);
+              
+              for (int i = 0; i < dependencies.length; i++) {
+                newList[i] = dependencies[i];
+              }
+              
+              newList[dependencies.length] = child;
+              
+              return new DartCodeChild(path.filename, path, hash, newList);
+              });
+          } else {
+            return new DartCodeChild(path.filename, path, hash, dependencies);
+          }
+        });
       });
     });
       
