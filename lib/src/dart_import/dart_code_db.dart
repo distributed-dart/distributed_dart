@@ -17,7 +17,7 @@ class DartCodeDb {
    * 
    * Path => DartCodeChild instance (as future)
    */
-  static Map<Path,Future<DartCodeChild>> _pathToDartCode = new Map();
+  static Map<Path,Future<DartCodeChild>> _pathToDartCodeChild = new Map();
   
   /*
    * Resolve a given hash checksum value into to content of the file. Because we 
@@ -93,7 +93,7 @@ class DartCodeDb {
     Future<DartCodeChild> dartCode;
     
     if (useCache) {
-      dartCode = _pathToDartCode[path];
+      dartCode = _pathToDartCodeChild[path];
       
       if (dartCode != null) {
         return dartCode;
@@ -115,6 +115,11 @@ class DartCodeDb {
       String hashString = _hashListToString(hash);
       _sourceCache[hashString] = new Future.value(bytes);
       _hashToPathCache[hashString] = path;
+      
+      // Only scan Dart files. All other files should just be accepted.
+      if (path.extension.toLowerCase() != "dart") {
+        return new DartCodeChild(path.filename, path, hash, []);
+      }
       
       // Parse the file with the scanner and get dependencies
       Runes runes = (new String.fromCharCodes(bytes)).runes;
@@ -147,7 +152,7 @@ class DartCodeDb {
       });
     });
       
-    _pathToDartCode[path] = dartCode;
+    _pathToDartCodeChild[path] = dartCode;
     return dartCode;
   }
   
@@ -163,7 +168,7 @@ class DartCodeDb {
     }
     
     if (clearDartCodeCache) {
-      _pathToDartCode.clear();
+      _pathToDartCodeChild.clear();
     }
     
     _sourceCache.clear();
@@ -197,22 +202,17 @@ class DartCodeDb {
         // the path.
         File contentFile = new File.fromPath(contentPath);
         
-        return contentFile.readAsBytes().then((List<int> fileContent) {
+        Future<List<int>> content;
+        
+        content = contentFile.readAsBytes().then((List<int> fileContent) {
           SHA1 sha1 = new SHA1();
           sha1.add(fileContent);
           String newHash = _hashListToString(sha1.close());
           
           if (hash == newHash) {
-            /* 
-             * The file has not changed from last time we read it so we can use
-             * it. If changeCache is true we are allowed to change the file
-             * content cache and add the file content to this cache.
-             */
-            Future<List<int>> returnValue = new Future.value(fileContent);
-            if (canAddToCache) {
-              _sourceCache[hash] = returnValue;  
-            }
-            return returnValue;
+            // The file has not changed from last time we read it
+            // so we can use it.
+            return fileContent;
           } else {
             /*
              * Well this is awkward. The file has changed and we don’t know the 
@@ -223,6 +223,15 @@ class DartCodeDb {
             throw new FileChangedException("Hash sum is not the same. $e");
           }
         });
+        
+        /*
+         * If canAddToCache is true we are allowed to change the file
+         * content cache and add the file content to this cache. 
+         */
+        if (canAddToCache) {
+          _sourceCache[hash] = content;
+        }
+        return content;
         
       } else {
         // The file is not found in the cache and we don't have en path of it

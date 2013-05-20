@@ -37,8 +37,18 @@ class DartCode extends DartCodeChild {
     
     return DartCodeDb.resolve(uri, useCache:useCache).then((DartCodeChild c) {
       DartCode code = new DartCode.fromDartCodeChild(c);
-      code._shortenPaths();
-      return code;
+      File distDartDeps = new File("$uri.distdartdeps");
+      
+      return distDartDeps.exists().then((bool fileExists) {
+        if (fileExists) {
+          return distDartDeps.readAsLines().then((List<String> dependencies) {
+            code.dependencies
+          });
+        }
+      }).then((_) {
+        code._shortenPaths();
+        return code;
+      });
     });
   }
 
