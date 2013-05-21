@@ -1,4 +1,4 @@
-Distributed Dart
+[[distributed_dart_logo.png]]
 ================
 Spawn isolates on remote nodes in a distributed system
 
