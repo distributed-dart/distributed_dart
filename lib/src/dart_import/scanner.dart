@@ -141,7 +141,9 @@ class Scanner {
         keyword == "part" || 
         keyword == "library" ||
         keyword == "export" ||
-        keyword == "as") {
+        keyword == "as" ||
+        keyword == "show" || 
+        keyword == "hide") {
       
       _log("'$keyword' is a keyword!");
       
