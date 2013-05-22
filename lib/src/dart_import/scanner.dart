@@ -25,6 +25,7 @@ class Scanner {
    * we find a String and nextTokenIsImportant is false we can stop the scan.
    */
   bool _nextTokenIsImportant;
+  String _keywordBefore;
   
   /**
    * Create new instance of [Scanner] to parse a instance of [Runes]. The 
@@ -46,6 +47,7 @@ class Scanner {
     _dependencies = new List<String>();
     _byteOffset = -1;
     _nextTokenIsImportant = false;
+    _keywordBefore = "";
     
     int next = _advance();
     while (!identical(next, _U.$EOF)) {
@@ -53,6 +55,7 @@ class Scanner {
       _log("bigSwich output = $next");
     }
     
+    _log("Return value from _getDependencies() = $_dependencies");
     return _dependencies;
   }
   
@@ -63,15 +66,19 @@ class Scanner {
   int _byteAt(int index) => _bytes[index];
   
   int _advance() => _bytes[++_byteOffset];
-  
+
   int _bigSwitch(int next) {
     _log("Running _bigSwitch($next)");
     if (identical(next, _U.$SPACE) || identical(next, _U.$TAB)
         || identical(next, _U.$LF) || identical(next, _U.$CR)) {
       // Do nothing as we don't collect white space.
-      next = _advance();
-      while (identical(next, _U.$SPACE)) {
+      try {
         next = _advance();
+        while (identical(next, _U.$SPACE)) {
+          next = _advance();
+        }
+      } on RangeError {
+        next = _U.$EOF;
       }
       return next;
     }
@@ -139,6 +146,7 @@ class Scanner {
       _log("'$keyword' is a keyword!");
       
       _nextTokenIsImportant = true;
+      _keywordBefore = keyword;
       return next;
     } else {
       /* This is not a keyword but an identifier. Because identifiers is not
@@ -146,12 +154,13 @@ class Scanner {
        * finish.
        */
       _log("'$keyword' is an identifier!");
-      _log("     and nextTokenIsImportant = $_nextTokenIsImportant");
+      _log("     and _nextTokenIsImportant = $_nextTokenIsImportant");
+      _log("     and _keywordBefore = $_keywordBefore");
       
       if (_nextTokenIsImportant) {
-        return next;
+        return (_keywordBefore == "part" && keyword == "of") ? _U.$EOF : next;
       } else {
-        return _U.$EOF;  
+        return _U.$EOF;
       }
     }
     // END: Keyword check
