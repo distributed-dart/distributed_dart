@@ -28,10 +28,9 @@ class DartProgram extends DependencyNode {
   }
   
   factory DartProgram(FileNode program) {
-    List<FileNode> dependencies = program.getFileNodes(new Set<FileNode>())
-                                    .map((FileNode node) {
-                                      return node.copy;
-                                    }).toList(growable: false);
+    List<FileNode> dependencies = program.getFileNodes().map((FileNode node) {
+      return node.copy;
+    }).toList(growable: false);
     
     int segmentsToRemove = _shortenPaths(dependencies);
     Path newPath = _removeSegmentsOfPath(program._path, segmentsToRemove);
