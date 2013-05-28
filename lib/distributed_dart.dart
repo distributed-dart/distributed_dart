@@ -8,8 +8,9 @@ import 'dart:crypto';
 
 part 'src/dart_import/util/characters.dart';
 part 'src/dart_import/util/tools.dart';
-part 'src/dart_import/dart_code.dart';
-part 'src/dart_import/dart_code_child.dart';
+part 'src/dart_import/tree/file_node.dart';
+part 'src/dart_import/tree/dependency_node.dart';
+part 'src/dart_import/dart_program.dart';
 part 'src/dart_import/dart_code_db.dart';
 part 'src/dart_import/download_request.dart';
 part 'src/dart_import/scanner.dart';
