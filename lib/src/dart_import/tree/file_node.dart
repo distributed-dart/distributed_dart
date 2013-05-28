@@ -1,27 +1,30 @@
 part of distributed_dart;
 
-/// Represents a file in the tree.
+/// Represents a file in the tree without dependencies.
 class FileNode {
+  String _name;
+  Path _path;
+  List<int> _fileHash;
+  
   /// File name of the Dart file the object represent.
   String get name => _name;
-  String _name;
   
-  /**
-   *  Path to the Dart file the object represent. The path is made as short as
-   *  possible.
-   */
+  /// [Path] to the Dart file the object represent.
   Path get path => _path;
-  Path _path;
   
   /// SHA1 checksum of the Dart file the object represent as a [String].
   String get fileHashString => _hashListToString(_fileHash);
+  
   List<int> get fileHash => _fileHash.toList(growable: false);
-  List<int> _fileHash;
   
   /// Create FileNode instance. Should only be used by [DartCodeDb].
   FileNode(this._name, this._path, this._fileHash);
   
-  Set<FileNode> getFileNodes(Set<FileNode> set) {
+  Set<FileNode> getFileNodes([Set<FileNode> set]) {
+    if (set == null) {
+      set = new Set<FileNode>();
+    }
+    
     set.add(this);
     return set;
   }
