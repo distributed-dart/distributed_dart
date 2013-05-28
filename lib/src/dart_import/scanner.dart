@@ -51,7 +51,11 @@ class Scanner {
     
     int next = _advance();
     while (!identical(next, _U.$EOF)) {
-      next = _bigSwitch(next);
+      try {
+        next = _bigSwitch(next);
+      } on RangeError {
+        next = _U.$EOF;
+      }
       _log("bigSwich output = $next");
     }
     
@@ -72,13 +76,9 @@ class Scanner {
     if (identical(next, _U.$SPACE) || identical(next, _U.$TAB)
         || identical(next, _U.$LF) || identical(next, _U.$CR)) {
       // Do nothing as we don't collect white space.
-      try {
+      next = _advance();
+      while (identical(next, _U.$SPACE)) {
         next = _advance();
-        while (identical(next, _U.$SPACE)) {
-          next = _advance();
-        }
-      } on RangeError {
-        next = _U.$EOF;
       }
       return next;
     }
