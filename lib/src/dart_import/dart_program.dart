@@ -1,16 +1,47 @@
 part of distributed_dart;
 
-/// Represents a file in the tree which can have dependencies. (e.g. Dart file)
+/**
+ * The purpose of this class is to represent a Dart program and its 
+ * dependencies and make it possible to send and receive the object as JSON. 
+ * All dependencies are represented as a set of unique [FileNode] objects.
+ */
 class DartProgram extends DependencyNode {
   static const String _NAME = "name";
   static const String _PATH = "path";
   static const String _HASH = "hash";
   static const String _DEPENDENCIES = "dependencies";
+
+  DartProgram._internal(String name, Path path, List<int> hash, 
+      List<FileNode> dependencies) : super(name,path,hash,dependencies);
   
+  /**
+   * Create [DartProgram] instance from [FileNode] or [DependencyNode] instance.
+   * 
+   * All dependencies are converted to [FileNode] instances and all paths are 
+   * relative to the [DartProgram]. Because the paths are changed, the 
+   * [DartProgram] instance will contain copies of [FileNode] instances and not 
+   * the actual [FileNode] instances.
+   */
+  factory DartProgram(FileNode program) {
+    List<FileNode> dependencies = program.getFileNodes().map((FileNode node) {
+      return node.copy;
+    }).toList(growable: false);
+    
+    // Also remove the needed segments from the file this object represent.
+    int segmentsToRemove = _shortenPaths(dependencies);
+    Path newPath = _removeSegmentsOfPath(program._path, segmentsToRemove);
+    
+    return new DartProgram._internal(program._name, newPath, program._fileHash,
+                                     dependencies);
+  }
+  
+  /// Create [DartProgram] instance from [String] containing a JSON object 
+  /// (created from [toJson]).
   factory DartProgram.fromJson(String jsonString) {
     return new DartProgram.fromMap(json.parse(jsonString));
   }
   
+  /// Create [DartProgram] from [Map] created by parsing a JSON object.
   factory DartProgram.fromMap(Map jsonMap) {
     List<FileNode> dependencies = new List<FileNode>();
     
@@ -27,26 +58,6 @@ class DartProgram extends DependencyNode {
                                      jsonMap[_HASH], dependencies);
   }
   
-  factory DartProgram(FileNode program) {
-    List<FileNode> dependencies = program.getFileNodes().map((FileNode node) {
-      return node.copy;
-    }).toList(growable: false);
-    
-    int segmentsToRemove = _shortenPaths(dependencies);
-    Path newPath = _removeSegmentsOfPath(program._path, segmentsToRemove);
-    
-    return new DartProgram._internal(program._name,
-                                     newPath,
-                                     program._fileHash,
-                                     dependencies);
-  }
-  
-  DartProgram._internal(String name,
-                        Path path,
-                        List<int> hash,
-                        List<FileNode> dependencies) 
-  : super(name,path,hash,dependencies);
-  
   /*
    *  Because the operation can be a little CPU intensive we save this. There
    *  are no risks involved because the hashsum of each dependency of the 
@@ -55,10 +66,9 @@ class DartProgram extends DependencyNode {
   String _treeHashCache = null;
   
   /**
-   * Returns a calculated SHA1 checksum for the DartProgram object and all the 
-   * dependencies in the tree.  The purpose of this checksum is to make sure 
-   * the checksum is different if there are changes in one of the files in the 
-   * tree of [FileNode] objects.
+   * Returns a calculated SHA1 checksum for the [DartProgram] object and all the 
+   * dependencies.  The purpose of this checksum is to make sure the checksum 
+   * is different if there are changes in one of the dependencies.
    */
   String get treeHash {
     if (_treeHashCache == null) {
@@ -70,10 +80,6 @@ class DartProgram extends DependencyNode {
     return _treeHashCache;
   }
   
-  /**
-  * Generate Map object from DartProgram instance and is required to make it
-  * possible to convert a DartProgram instance to an JSON string.
-  */
   Map<String, Object> toJson() {
     _log("Running toJson() for $name");
     
@@ -97,7 +103,7 @@ class DartProgram extends DependencyNode {
   }
   
   /**
-   * Create an environment for the [DartCode] and all dependencies and return 
+   * Create an environment for the [DartProgram] and all dependencies and return 
    * the path to run (with e.g. [spawnUri]) as a [Future]. Missing files will be
    * downloaded. The created environment will be placed in the [workDir]
    * directory where also a cache will be created for previously dowloaded
