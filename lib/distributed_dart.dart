@@ -5,6 +5,7 @@ import 'dart:isolate';
 import 'dart:json' as json;
 import 'dart:typed_data';
 import 'dart:crypto';
+// import "package:crypto/crypto.dart"; // Should be used in next Dart version
 
 part 'src/dart_import/util/characters.dart';
 part 'src/dart_import/util/tools.dart';
