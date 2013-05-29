@@ -84,14 +84,15 @@ class DartCodeDb {
                                                 {bool useCache: true}) {
     _log("Running resolveDartProgram($uri, $useCache)");
     
-    Path path = new Path(uri);
-    Path dir = path.directoryPath;
-    Path packageDir = dir.append("packages");
-    
-    return DartCodeDb._resolve(uri, packageDir, useCache:useCache).then(
-        (FileNode node) {
-      DartProgram code = new DartProgram(node);
-      return code;
+    return new File(uri).fullPath().then((String path) {
+      Path dir = new Path(path).directoryPath;
+      Path packageDir = dir.append("packages");
+      
+      return DartCodeDb._resolve(path, packageDir, useCache:useCache).then(
+          (FileNode node) {
+            DartProgram code = new DartProgram(node);
+            return code;
+          });
     });
   }
   
@@ -165,7 +166,7 @@ class DartCodeDb {
               
               // If started with # it is a comment and should be ignored
               if (!depUriTrim.isEmpty && !depUriTrim.startsWith("#")) {
-                String file = path.directoryPath.append(depUriTrim).toString();
+                String file = dir.join(new Path(depUriTrim)).toNativePath();
                 sink.add(_resolve(file, packageDir, useCache: useCache));  
               }
           })).toList().then((List<Future<FileNode>> dependencies) {
@@ -226,7 +227,7 @@ class DartCodeDb {
       })).then((List<FileNode> dependencies) {
         _log("Got all dependencies for $uri");
         
-        String dartDepsFile = "$uri.distdartdeps";
+        String dartDepsFile = "${path.toNativePath()}.distdartdeps";
         
         _log("Create async task to check existence of file: $dartDepsFile");
         return new File(dartDepsFile).exists().then((bool fileExists) {
