@@ -225,42 +225,52 @@ class DartCodeDb {
         
         return _resolve(filePath.toNativePath(), packageDir, useCache:useCache);
       })).then((List<FileNode> dependencies) {
-        _log("Got all dependencies for $uri");
-        
-        String dartDepsFile = "${path.toNativePath()}.distdartdeps";
-        
-        _log("Create async task to check existence of file: $dartDepsFile");
-        return new File(dartDepsFile).exists().then((bool fileExists) {
-          _log("Result for check file existence of $dartDepsFile:");
-          if (fileExists) {
-            _log("File exist. We resolve it: resolve(");
-            _log("($dartDepsFile, $packageDir, useCache:$useCache))");
-            
-            return _resolve(dartDepsFile, packageDir, useCache:useCache).then(
-                (FileNode node) {
-              _log("Resolve is finish for: $dartDepsFile.");
-
-              _log("Creating new list.");
-              List<FileNode> newList = new List(dependencies.length+1);
-              
-              _log("Inserting elements into the list from dependencies.");
-              newList.setRange(0, dependencies.length, dependencies);
-              
-              _log("Inserting child element to the new list.");
-              newList[newList.length - 1] = node;
-              
-              _log("Returning DependencyNode + new child.");
-              return new DependencyNode(path.filename, path, hash, newList);
-            });
-          } else {
-            _log("No such file exist so we just return the FileNode.");
-            if (dependencies.length > 0) {
-              return new DependencyNode(path.filename,path,hash,dependencies);
-            } else {
-              return new FileNode(path.filename,path,hash); 
-            }
-          }
-        });
+        if (dependencies.length > 0) {
+          return new DependencyNode(path.filename,path,hash,dependencies);
+        } else {
+          return new FileNode(path.filename,path,hash); 
+        }
+      });
+    }).then((FileNode origNode) {
+      _log("Got all dependencies for $uri");
+      
+      if (origNode.name.endsWith(".distdartdeps")) {
+        _log("File is a .distdartdeps file so we just return it.");
+        return origNode;
+      }
+      
+      String distDartDepsFile = "${path.toNativePath()}.distdartdeps";
+      
+      _log("Create async task to check existence of file: $distDartDepsFile");
+      return new File(distDartDepsFile).exists().then((bool fileExists) {
+        _log("Result for check file existence of $distDartDepsFile:");
+        if (fileExists) {
+          _log("File exist. We resolve it: resolve(");
+          _log("($distDartDepsFile, $packageDir, useCache:$useCache))");
+          
+          return _resolve(distDartDepsFile, packageDir, useCache:useCache).then(
+              (FileNode node) {
+                if (origNode is DependencyNode) {
+                  _log("Returned node is a DependencyNode.");
+                  
+                  List<FileNode> newDependencies = 
+                      origNode._dependencies.toList(growable:true);
+                  
+                  newDependencies.add(node);
+                  
+                  origNode._dependencies = newDependencies;
+                  return origNode;
+                } else {
+                  _log("Returned node is a FileNode.");
+                  
+                  return new DependencyNode(origNode.name, origNode.path, 
+                                            origNode.fileHash, [node]);
+                }
+              });
+        } else {
+          _log("No such file exist so we just return the FileNode.");
+          return origNode;
+        }
       });
     });
     
