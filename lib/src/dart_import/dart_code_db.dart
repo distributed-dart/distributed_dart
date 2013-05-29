@@ -161,8 +161,13 @@ class DartCodeDb {
           .transform(new LineTransformer())
           .transform(new StreamTransformer<String, Future<FileNode>>(
             handleData: (String depUri, EventSink<Future<FileNode>> sink) {
-              String file = path.directoryPath.append(depUri).toString();
-              sink.add(_resolve(file, packageDir, useCache: useCache));
+              String depUriTrim = depUri.trim();
+              
+              // If started with # it is a comment and should be ignored
+              if (!depUriTrim.isEmpty && !depUriTrim.startsWith("#")) {
+                String file = path.directoryPath.append(depUriTrim).toString();
+                sink.add(_resolve(file, packageDir, useCache: useCache));  
+              }
           })).toList().then((List<Future<FileNode>> dependencies) {
             return Future.wait(dependencies).then((List<FileNode> list) {
               if (list.length > 0) {
