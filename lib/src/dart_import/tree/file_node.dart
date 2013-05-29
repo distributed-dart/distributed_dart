@@ -5,30 +5,33 @@ class FileNode {
   String _name;
   Path _path;
   List<int> _fileHash;
-  
-  /// File name of the Dart file the object represent.
-  String get name => _name;
-  
-  /// [Path] to the Dart file the object represent.
-  Path get path => _path;
-  
-  /// SHA1 checksum of the Dart file the object represent as a [String].
-  String get fileHashString => _hashListToString(_fileHash);
-  
-  List<int> get fileHash => _fileHash.toList(growable: false);
-  
-  /// Create FileNode instance. Should only be used by [DartCodeDb].
+
   FileNode(this._name, this._path, this._fileHash);
   
+  /// File name of the file the object represent.
+  String get name => _name;
+  
+  /// [Path] to the file the object represent.
+  Path get path => _path;
+  
+  /// SHA1 checksum of the file the object represent as a [String].
+  String get fileHashString => _hashListToString(_fileHash);
+  
+  /// SHA1 checksum of the file the object represent as a [List<int>]. The 
+  /// returned list is not growable.
+  List<int> get fileHash => _fileHash.toList(growable: false);
+  
+  /// Insert this object into a [Set] and return the [Set]. If [set] is
+  /// provided the method will use this [Set] instead of creating a new one.
   Set<FileNode> getFileNodes([Set<FileNode> set]) {
     if (set == null) {
       set = new Set<FileNode>();
     }
-    
     set.add(this);
     return set;
   }
   
+  /// Returns a copy of this object.
   FileNode get copy => new FileNode(_name, _path, _fileHash);
   
   int get hashCode => _path.hashCode;
