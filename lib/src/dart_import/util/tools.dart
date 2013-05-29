@@ -57,6 +57,8 @@ String _hashListToString(List<int> list) {
  *     Packages\server\database.dart
  * 
  * The purpose is to make the paths independent of the running system.
+ * 
+ * The return value is the number of parts there are deleted from each path.
  */
 int _shortenPaths(List<FileNode> dependencies) {
   _log("Running _shortenPaths($dependencies)");

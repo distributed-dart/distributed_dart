@@ -73,8 +73,9 @@ class DartCodeDb {
   }
   
   /**
-   * Create DartProgram object from URI to a valid Dart program. The DartProgram
-   * object contains information about all dependencies for the program.
+   * Create [DartProgram] object from URI to a valid Dart program. The 
+   * [DartProgram] object contains information about all dependencies for 
+   * the program.
    * 
    * [useCache] should be set to false if some of the files has been changed
    * on the filesystem while the program has been running.
@@ -96,10 +97,10 @@ class DartCodeDb {
   
   /**
    * Resolve a URI into a [FileNode] object. This method looks like the 
-   * same as [DartCode.resolve] but the main difference is this method returns 
-   * a [FileNode] object when the [DartCode.resolve] method returns a 
-   * [DartCode] object. The reason for this design is [DartCodeDb._resolve] is 
-   * designed to be called recursive.
+   * same as [DartCodeDb.resolveDartProgram] but the main difference is this 
+   * method returns a [FileNode] object when the [DartCodeDb.resolveDartProgram] 
+   * method returns a [DartProgram] object. The reason for this design is 
+   * [DartCodeDb._resolve] is designed to be called recursive.
    * 
    * [useCache] should be set to false if some of the files has been changed
    * on the filesystem while the program has been running.
