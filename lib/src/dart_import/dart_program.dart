@@ -135,10 +135,7 @@ class DartProgram extends DependencyNode {
       
       spawnFile.exists().then((bool fileExists) {
         if (fileExists) {
-          // Get the full path and return it
-          spawnFile.fullPath().then((String fullPath) {
-            c.complete(fullPath);
-          });
+          c.complete(spawnFile.path);
         } else {
           Set<Path> directoriesToCreate = new Set<Path>(); 
 
@@ -185,15 +182,11 @@ class DartProgram extends DependencyNode {
               if (missingFiles.length > 0) {
                 _log("Download missing files from network:");
                 DartCodeDb.downloadFilesAndCreateLinks(missingFiles).then((_) {
-                  spawnFile.fullPath().then((String fullPath) {
-                    c.complete(fullPath);
-                  });
+                  c.complete(spawnFile.path);
                 });
               } else {
                 // Get the full path and return it
-                spawnFile.fullPath().then((String fullPath) {
-                  c.complete(fullPath);
-                });
+                c.complete(spawnFile.path);
               }
             });
           });
@@ -201,6 +194,17 @@ class DartProgram extends DependencyNode {
       });
     });
     
-    return c.future;
+    return c.future.then((String path) {
+      // Append current working directory for the running Dart process
+      Path processDir = new Path(Directory.current.path);
+      String fullPath = processDir.append(path).toNativePath();
+      
+      _log("Append current process working directory:");
+      _log("     File to spawn:     $path");
+      _log("     Process directory: ${processDir.toString()}");
+      _log("     Full path:         $fullPath");
+      
+      return fullPath;
+    });
   }
 }
