@@ -4,7 +4,8 @@ import 'dart:async';
 import 'dart:isolate';
 import 'dart:json' as json;
 import 'dart:typed_data';
-import "package:crypto/crypto.dart";
+
+import 'package:crypto/crypto.dart';
 
 part 'src/dart_import/util/characters.dart';
 part 'src/dart_import/util/tools.dart';
