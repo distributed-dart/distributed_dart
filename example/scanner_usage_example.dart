@@ -5,8 +5,8 @@
  */
 /// test
 import "package:distributed_dart/distributed_dart.dart" as dist;
+import "package:crypto/crypto.dart";
 import "dart:io";
-import "dart:crypto";
 import "dart:json" as json;
 
 void main() {
