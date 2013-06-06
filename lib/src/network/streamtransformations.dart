@@ -95,7 +95,7 @@ class IsolateCommunication {
     seen.add(object);
   }
 
-  Object scanAndReplaceObject(Object object) {
+  Object scanAndReplaceObject(final object) {
     if (object is num) {
       return object;
     } else if (object is bool) {
@@ -128,12 +128,12 @@ class IsolateCommunication {
       seen.remove(object);
       return object;
     } else if (object is SendPort) {
-      // IMPORTANT!!!
-      // OBJECT IS A SENDPORT SO REPLACE IT AND RETURN THE NEW VALUE!!!
-      return object;
+      return new LocalIsolate.fromSendPort(object).toRemoteSendPort();
     } else {
-      String m = "Not serializable type: ${object.runtimeType}";
-      throw new NotSerializableObjectException(m);
+      checkCycle(object);
+      var r = scanAndReplaceObject(object.toJson());
+      seen.remove(object);
+      return r;
     }
   }
 }
