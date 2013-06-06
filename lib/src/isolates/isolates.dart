@@ -120,7 +120,7 @@ class RemoteIsolate {
   }
 
   static Future<IsolateId> Spawn(String uri){
-    Future<DartCode> dc = DartCode.resolve(uri);
+    Future<FileNode> dc = DartCodeDb.resolveDartProgram(uri);
     return new Future.value(new IsolateId()); // TODO: get from remote 
   }
 }

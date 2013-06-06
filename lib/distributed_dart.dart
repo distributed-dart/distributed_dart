@@ -4,14 +4,16 @@ import 'dart:async';
 import 'dart:isolate';
 import 'dart:json' as json;
 import 'dart:typed_data';
-import 'dart:crypto';
+
+import 'package:crypto/crypto.dart';
 
 part 'src/dart_import/util/characters.dart';
 part 'src/dart_import/util/tools.dart';
-part 'src/dart_import/dart_code.dart';
-part 'src/dart_import/dart_code_child.dart';
+part 'src/dart_import/tree/file_node.dart';
+part 'src/dart_import/tree/dependency_node.dart';
+part 'src/dart_import/dart_program.dart';
 part 'src/dart_import/dart_code_db.dart';
-part 'src/dart_import/download_request.dart';
+part 'src/dart_import/request_bundle.dart';
 part 'src/dart_import/scanner.dart';
 part 'src/dart_import/exceptions.dart';
 

@@ -5,8 +5,8 @@
  */
 /// test
 import "package:distributed_dart/distributed_dart.dart" as dist;
+import "package:crypto/crypto.dart";
 import "dart:io";
-import "dart:crypto";
 import "dart:json" as json;
 
 void main() {
@@ -34,17 +34,16 @@ void main() {
     
     //db.getSource(new dist.DartCode("scanner_usage_example.dart", "lib/distributed_dart.dart", checksumint, [])).then((List<int> t) => t.forEach((int x) => print(new String.fromCharCode(x))));
     
-    dist.DartCode.resolve("example/scanner_usage_example.dart", useCache:true).then((dist.DartCode code) {
+    dist.DartCodeDb.resolveDartProgram("example/scanner_usage_example.dart", useCache:true).then((dist.DartProgram code) {
       print(code.path);
       
-      code.dependencies.forEach((dist.DartCodeChild object) {
+      code.dependencies.forEach((dist.FileNode object) {
         print(object.path);
-        object.dependencies.forEach((dist.DartCodeChild x) => print(x.path));
       });
       
       String jcode = json.stringify(code);
       
-      if (code.treeHash == new dist.DartCode.fromJson(jcode).fileHash) {
+      if (code.treeHash == new dist.DartProgram.fromJson(jcode).treeHash) {
         print("Hurra!");
       }
       
