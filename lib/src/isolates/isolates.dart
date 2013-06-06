@@ -96,13 +96,13 @@ class LocalIsolate{
   }
 
   /// spawn a new isolate
-  factory LocalIsolate.Spawn(String uri){
+  factory LocalIsolate.spawn(String uri){
     var sp = spawnUri(uri);
-    return new LocalIsolate.BindSendPort(sp); 
+    return new LocalIsolate.fromSendPort(sp); 
   }
 
   /// bind a new sendport to the [LocalIsolate] lookup table
-  LocalIsolate.BindSendPort(this.sendport){
+  LocalIsolate.fromSendPort(this.sendport){
     _isolatemap[id.toString()] = this; 
   }
 }
