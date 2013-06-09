@@ -107,6 +107,10 @@ class Scanner {
       _nextTokenIsImportant = false;
     }
     
+    if (identical(next, _U.$HASH)) {
+      return tokenizeTag(next);
+    }
+    
     // We only need to check for chars we find important.
     return _advance(); // Ignore and get next char
   }
@@ -336,6 +340,21 @@ class Scanner {
       next = _advance();
     }
     return _error("unterminated string literal");
+  }
+  
+  int tokenizeTag(int next) {
+    // # or #!.*[\n\r]
+    if (_byteOffset == 0) {
+      if (identical(_peek(), _U.$BANG)) {
+        do {
+          next = _advance();
+        } while (!identical(next, _U.$LF) && 
+                 !identical(next, _U.$CR) && 
+                 !identical(next, _U.$EOF));
+        return next;
+      }
+    }
+    return _advance();
   }
   
   String _utf8String(int start, int offset) {
