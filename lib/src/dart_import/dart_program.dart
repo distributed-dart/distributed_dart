@@ -74,6 +74,7 @@ class DartProgram extends DependencyNode {
     if (_treeHashCache == null) {
       SHA1 sum = new SHA1();
       sum.add(name.codeUnits);
+      sum.add(this._fileHash);
       _dependencies.forEach((FileNode node) => sum.add(node._fileHash));
       _treeHashCache = _hashListToString(sum.close());
     }
