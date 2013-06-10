@@ -63,8 +63,6 @@ class Scanner {
     return _dependencies;
   }
   
-  int _nextByte() => _byteAt(++_byteOffset);
-
   int _peek() => _byteAt(_byteOffset + 1);
 
   int _byteAt(int index) => _bytes[index];
@@ -349,14 +347,18 @@ class Scanner {
   int _tokenizeAt(int next) {
     _log("Running _tokenizeAt($next");
     next = _advance();
-    int paranCount = 0;
+    bool partOfMetaData = true;
         
     while(true) {
       while ((_U.$a <= next && next <= _U.$z) ||
             (_U.$A <= next && next <= _U.$Z) ||
             (_U.$0 <= next && next <= _U.$9) ||
             (identical(next, _U.$_)) ){
-        next = _advance();
+        if (partOfMetaData) {
+          next = _advance();  
+        } else {
+          return next;
+        }
       }
       
       if (identical(next, _U.$SPACE) || identical(next, _U.$TAB)
@@ -366,19 +368,27 @@ class Scanner {
         while (identical(next, _U.$SPACE)) {
           next = _advance();
         }
+        partOfMetaData = false;
       } else if (identical(next, _U.$OPEN_PAREN)) {
-        paranCount++;
-      } else if (identical(next, _U.$CLOSE_PAREN)) {
-        if (--paranCount == 0) {
-          return _advance();
-        }
+        int paranCount = 0;
+        
+        do {
+          if (identical(next, _U.$OPEN_PAREN)) {
+            paranCount++;
+          } else if (identical(next, _U.$CLOSE_PAREN)) {
+            paranCount--;
+          }
+          next = _advance();
+        } while (paranCount != 0);
+        
+        partOfMetaData = false;
       } else if (!identical(next, _U.$PERIOD)){
-        return next;
+        partOfMetaData = true;
+        next = _advance();
+      } else {
+        next = _advance();
       }
-      
-      next = _advance();
     }
-    
     return next;
   }
   
