@@ -15,7 +15,7 @@ class RequestType {
   * request handler. 
   */
 abstract class Request implements RequestHandler{
-  const int type = RequestType.Default;
+  final int type = RequestType.Default;
 
   Request();
   Request.empty();
