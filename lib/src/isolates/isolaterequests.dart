@@ -2,7 +2,7 @@ part of distributed_dart;
 
 // Request to spawn new isolate
 class SpawnIsolateRequest extends Request {
-  const int type = RequestType.SpawnIsolate;
+  final int type = RequestType.SpawnIsolate;
 
   Map toJson(){
    var obj = { 'type' : type };
@@ -19,7 +19,7 @@ class SpawnIsolateRequest extends Request {
 
 // metadata for data sent to isolate
 class IsolateDataRequest extends Request {
-  const int type = RequestType.IsolateData;
+  final int type = RequestType.IsolateData;
   var id;
   var data;
 

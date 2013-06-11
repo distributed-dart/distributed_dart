@@ -34,7 +34,7 @@ abstract class Request implements RequestHandler{
 }
 
 abstract class RequestHandler {
-  const int type = RequestType.Default;
+  final int type = RequestType.Default;
   void requestHandler(Map request, Network reply);
   void runHandler(Map msg, Network reply);
 }
