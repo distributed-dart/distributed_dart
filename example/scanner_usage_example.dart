@@ -1,9 +1,16 @@
+#!/usr/bin/dart
+
 /*
  * Complete lolz :D
  * //!"##¤%¤#"&&%&%¤&¤""#¤1@£1£1£1
  * //\\//\\
  */
 /// test
+@i_mpo8rt_test.test(
+    ((
+    (((t))
+        )
+    )))
 import "package:distributed_dart/distributed_dart.dart" as dist;
 import "package:crypto/crypto.dart";
 import "dart:io";

@@ -63,8 +63,6 @@ class Scanner {
     return _dependencies;
   }
   
-  int _nextByte() => _byteAt(++_byteOffset);
-
   int _peek() => _byteAt(_byteOffset + 1);
 
   int _byteAt(int index) => _bytes[index];
@@ -105,6 +103,14 @@ class Scanner {
     
     if (identical(next, _U.$SEMICOLON)) {
       _nextTokenIsImportant = false;
+    }
+    
+    if (identical(next, _U.$AT)) {
+      return _tokenizeAt(next);
+    }
+    
+    if (identical(next, _U.$HASH)) {
+      return _tokenizeTag(next);
     }
     
     // We only need to check for chars we find important.
@@ -336,6 +342,70 @@ class Scanner {
       next = _advance();
     }
     return _error("unterminated string literal");
+  }
+  
+  int _tokenizeAt(int next) {
+    _log("Running _tokenizeAt($next");
+    next = _advance();
+    bool partOfMetaData = true;
+        
+    while(true) {
+      while ((_U.$a <= next && next <= _U.$z) ||
+            (_U.$A <= next && next <= _U.$Z) ||
+            (_U.$0 <= next && next <= _U.$9) ||
+            (identical(next, _U.$_)) ){
+        if (partOfMetaData) {
+          next = _advance();  
+        } else {
+          return next;
+        }
+      }
+      
+      if (identical(next, _U.$SPACE) || identical(next, _U.$TAB)
+          || identical(next, _U.$LF) || identical(next, _U.$CR)) {
+        // Do nothing as we don't collect white space.
+        next = _advance();
+        while (identical(next, _U.$SPACE)) {
+          next = _advance();
+        }
+        partOfMetaData = false;
+      } else if (identical(next, _U.$OPEN_PAREN)) {
+        int paranCount = 0;
+        
+        do {
+          if (identical(next, _U.$OPEN_PAREN)) {
+            paranCount++;
+          } else if (identical(next, _U.$CLOSE_PAREN)) {
+            paranCount--;
+          }
+          next = _advance();
+        } while (paranCount != 0);
+        
+        partOfMetaData = false;
+      } else if (!identical(next, _U.$PERIOD)){
+        partOfMetaData = true;
+        next = _advance();
+      } else {
+        next = _advance();
+      }
+    }
+    return next;
+  }
+  
+  int _tokenizeTag(int next) {
+    _log("Running _tokenizeTag($next");
+    // # or #!.*[\n\r]
+    if (_byteOffset == 0) {
+      if (identical(_peek(), _U.$BANG)) {
+        do {
+          next = _advance();
+        } while (!identical(next, _U.$LF) && 
+                 !identical(next, _U.$CR) && 
+                 !identical(next, _U.$EOF));
+        return next;
+      }
+    }
+    return _advance();
   }
   
   String _utf8String(int start, int offset) {
