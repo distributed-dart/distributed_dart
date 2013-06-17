@@ -251,7 +251,7 @@ class DartCodeDb {
           return _resolve(distDartDepsFile, packageDir, useCache:useCache).then(
               (FileNode node) {
                 if (origNode is DependencyNode) {
-                  _log("Returned node is a DependencyNode.");
+                  _log("Original node is a DependencyNode.");
                   
                   List<FileNode> newDependencies = 
                       origNode._dependencies.toList(growable:true);
@@ -261,7 +261,7 @@ class DartCodeDb {
                   origNode._dependencies = newDependencies;
                   return origNode;
                 } else {
-                  _log("Returned node is a FileNode.");
+                  _log("Convert original FileNode to DependencyNode.");
                   
                   return new DependencyNode(origNode.path, 
                                             origNode.fileHash, [node]);
