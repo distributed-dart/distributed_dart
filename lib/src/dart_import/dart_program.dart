@@ -23,16 +23,40 @@ class DartProgram extends DependencyNode {
    * the actual [FileNode] instances.
    */
   factory DartProgram(FileNode program) {
-    List<FileNode> dependencies = program.getFileNodes().map((FileNode node) {
-      return node.copy;
-    }).toList(growable: false);
-    
-    // Also remove the needed segments from the file this object represent.
-    int segmentsToRemove = _shortenPaths(dependencies);
-    Path newPath = _removeSegmentsOfPath(program._path, segmentsToRemove);
-    
-    return new DartProgram._internal(program._name, newPath, program._fileHash,
-                                     dependencies);
+    if (program is DependencyNode) {
+      Set set = new Set();
+      
+      program.dependencies.forEach((FileNode node) {
+        set = node.getFileNodes(set);
+      });
+      
+      List<FileNode> dependencies = set.map((FileNode node) {
+        return node.copy;
+      }).toList(growable: true);
+      
+      /*
+       * Convert all paths into relative paths by remove all parts of each path
+       * there are equal to all others.
+       * 
+       * To also do this on the main program we add the program into the list of
+       * dependencies temporary and remove it again. When we remove the object
+       * from the list we save the path and use it when creating the DartProgram
+       * object.
+       */
+      dependencies.add(program.copy);
+      _shortenPaths(dependencies);
+      Path newPath = dependencies.removeLast()._path;
+      
+      return new DartProgram._internal(program._name, 
+                                       newPath, 
+                                       program._fileHash,
+                                       dependencies);
+    } else {
+      return new DartProgram._internal(program._name, 
+                                       new Path(program.name), 
+                                       program._fileHash,
+                                       []);
+    }
   }
   
   /// Create [DartProgram] instance from [String] containing a JSON object 
@@ -90,15 +114,17 @@ class DartProgram extends DependencyNode {
     returnMap[_PATH] = this._path.toString();
     returnMap[_HASH] = this._fileHash;
     
-    returnMap[_DEPENDENCIES] = this._dependencies.map((FileNode node) {
-      var map = new Map();
-      
-      map[_NAME] = node._name;
-      map[_PATH] = node._path.toString();
-      map[_HASH] = node._fileHash;
-      
-      return map;
-    }).toList(growable: false);
+    if (this._dependencies != null && this._dependencies.length > 0) {
+      returnMap[_DEPENDENCIES] = this._dependencies.map((FileNode node) {
+        var map = new Map();
+        
+        map[_NAME] = node._name;
+        map[_PATH] = node._path.toString();
+        map[_HASH] = node._fileHash;
+        
+        return map;
+      }).toList(growable: false);
+    }
     
     return returnMap;
   }
@@ -140,8 +166,10 @@ class DartProgram extends DependencyNode {
         } else {
           Set<Path> directoriesToCreate = new Set<Path>(); 
 
+          Set<FileNode> neededFiles = this.getFileNodes();
+          
           // Create list of directories there is needed
-          _dependencies.forEach((FileNode node) {
+          neededFiles.forEach((FileNode node) {
             Path directory = spawnDirectoryPath.join(node.path).directoryPath;
             directoriesToCreate.add(directory);
           });
@@ -156,7 +184,7 @@ class DartProgram extends DependencyNode {
             // file will be downloaded from the network.
             List<RequestBundle> missingFiles = new List<RequestBundle>();
             
-            Future.wait(_dependencies.map((FileNode node) {
+            Future.wait(neededFiles.map((FileNode node) {
               Path hashFilePath = 
                   hashDirPath.append("${node.fileHashString}.dart");
               
