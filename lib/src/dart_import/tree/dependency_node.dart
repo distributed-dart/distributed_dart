@@ -10,11 +10,10 @@ class DependencyNode extends FileNode {
    */
   List<FileNode> get dependencies => _dependencies.toList(growable: false);
   
-  DependencyNode(String name, 
-      Path path, 
+  DependencyNode(Path path,
       List<int> fileHash, 
       this._dependencies) 
-      : super(name,path,fileHash);
+      : super(path,fileHash);
   
   /**
    * Returns a list of the object itself and all dependencies. The object
@@ -34,7 +33,7 @@ class DependencyNode extends FileNode {
       set = new Set<FileNode>();
     }
     
-    set.add(new FileNode(this._name, this._path, this._fileHash));
+    set.add(new FileNode(this._path, this._fileHash));
     _dependencies.forEach((FileNode node) {
       set = node.getFileNodes(set);
     });
@@ -45,7 +44,6 @@ class DependencyNode extends FileNode {
     if (identical(this, other)) {
       return true;
     } else if (other is DependencyNode) {
-      if (_name != other._name) return false;
       if (_path != other._path) return false;
       if (_compareLists(_fileHash, other._fileHash)) return false;
       if (_dependencies != other._dependencies) return false;

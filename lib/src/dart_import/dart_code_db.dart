@@ -172,9 +172,9 @@ class DartCodeDb {
           })).toList().then((List<Future<FileNode>> dependencies) {
             return Future.wait(dependencies).then((List<FileNode> list) {
               if (list.length > 0) {
-                return new DependencyNode(path.filename, path, hash, list);
+                return new DependencyNode(path, hash, list);
               } else {
-                return new FileNode(path.filename, path, hash);
+                return new FileNode(path, hash);
               }
             });
           });
@@ -183,7 +183,7 @@ class DartCodeDb {
       // Only scan Dart files. All other files should just be accepted.
       if (extension != "dart") {
         _log("File is not distdartdeps or dart so we just return it.");
-        return new FileNode(path.filename, path, hash);
+        return new FileNode(path, hash);
       }
       
       // Parse the Dart file with the scanner and get dependencies
@@ -226,9 +226,9 @@ class DartCodeDb {
         return _resolve(filePath.toNativePath(), packageDir, useCache:useCache);
       })).then((List<FileNode> dependencies) {
         if (dependencies.length > 0) {
-          return new DependencyNode(path.filename,path,hash,dependencies);
+          return new DependencyNode(path,hash,dependencies);
         } else {
-          return new FileNode(path.filename,path,hash); 
+          return new FileNode(path,hash); 
         }
       });
     }).then((FileNode origNode) {
@@ -263,7 +263,7 @@ class DartCodeDb {
                 } else {
                   _log("Returned node is a FileNode.");
                   
-                  return new DependencyNode(origNode.name, origNode.path, 
+                  return new DependencyNode(origNode.path, 
                                             origNode.fileHash, [node]);
                 }
               });

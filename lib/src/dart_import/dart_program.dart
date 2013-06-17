@@ -11,8 +11,8 @@ class DartProgram extends DependencyNode {
   static const String _HASH = "hash";
   static const String _DEPENDENCIES = "dependencies";
 
-  DartProgram._internal(String name, Path path, List<int> hash, 
-      List<FileNode> dependencies) : super(name,path,hash,dependencies);
+  DartProgram._internal(Path path, List<int> hash, List<FileNode> dependencies)
+    : super(path,hash,dependencies);
   
   /**
    * Create [DartProgram] instance from [FileNode] or [DependencyNode] instance.
@@ -47,13 +47,11 @@ class DartProgram extends DependencyNode {
       _shortenPaths(dependencies);
       Path newPath = dependencies.removeLast()._path;
       
-      return new DartProgram._internal(program._name, 
-                                       newPath, 
+      return new DartProgram._internal(newPath,
                                        program._fileHash,
                                        dependencies);
     } else {
-      return new DartProgram._internal(program._name, 
-                                       new Path(program.name), 
+      return new DartProgram._internal(new Path(program.name),
                                        program._fileHash,
                                        []);
     }
@@ -71,15 +69,14 @@ class DartProgram extends DependencyNode {
     
     if (jsonMap.containsKey(_DEPENDENCIES) && jsonMap[_DEPENDENCIES] != null) {
       jsonMap[_DEPENDENCIES].forEach((Map fileNodeMap) {
-        FileNode newNode = new FileNode(fileNodeMap[_NAME], 
-                                        new Path(fileNodeMap[_PATH]),
+        FileNode newNode = new FileNode(new Path(fileNodeMap[_PATH]), 
                                         fileNodeMap[_HASH]);
         dependencies.add(newNode);
       });
     }
     
-    return new DartProgram._internal(jsonMap[_NAME], new Path(jsonMap[_PATH]), 
-                                     jsonMap[_HASH], dependencies);
+    return new DartProgram._internal(new Path(jsonMap[_PATH]), jsonMap[_HASH],
+                                     dependencies);
   }
   
   /*
@@ -110,7 +107,6 @@ class DartProgram extends DependencyNode {
     
     var returnMap = new Map();
     
-    returnMap[_NAME] = this._name;
     returnMap[_PATH] = this._path.toString();
     returnMap[_HASH] = this._fileHash;
     
@@ -118,7 +114,6 @@ class DartProgram extends DependencyNode {
       returnMap[_DEPENDENCIES] = this._dependencies.map((FileNode node) {
         var map = new Map();
         
-        map[_NAME] = node._name;
         map[_PATH] = node._path.toString();
         map[_HASH] = node._fileHash;
         
