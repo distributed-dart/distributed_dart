@@ -7,6 +7,9 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 
+part 'src/exceptions.dart';
+part 'src/errors.dart';
+
 part 'src/dart_import/util/characters.dart';
 part 'src/dart_import/util/tools.dart';
 part 'src/dart_import/tree/file_node.dart';
@@ -15,7 +18,6 @@ part 'src/dart_import/dart_program.dart';
 part 'src/dart_import/dart_code_db.dart';
 part 'src/dart_import/request_bundle.dart';
 part 'src/dart_import/scanner.dart';
-part 'src/dart_import/exceptions.dart';
 
 part 'src/isolates/isolates.dart';
 part 'src/isolates/isolaterequests.dart';
