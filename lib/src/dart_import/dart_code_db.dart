@@ -432,8 +432,9 @@ class DartCodeDb {
           _log("Link succesfully created.");
           c.complete();
         } else {
-          OSError osError = new OSError(result.stderr, result.exitCode);
-          throw new FileIOException("Could not create link.", osError);
+          throw new LinkException("Could not create link.", 
+                                  destination.toNativePath(),
+                                  new OSError(result.stderr, result.exitCode));
         }
       });
       
