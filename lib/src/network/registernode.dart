@@ -1,4 +1,4 @@
-import 'dart:io';
+part of distributed_dart;
 
 // throw error if someone tries to access it before it has been initialized
 IsolateNode _currentNode;

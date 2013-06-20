@@ -32,12 +32,14 @@ part 'src/isolates/isolaterequests.dart';
 part 'src/network/network.dart';
 part 'src/network/requesthandler.dart';
 part 'src/network/streamtransformations.dart';
+part 'src/network/registernode.dart';
 
 // Network handlers to handle received network packages
 part 'src/network/handler/filehandler.dart';
 part 'src/network/handler/filerequesthandler.dart';
 part 'src/network/handler/isolatedatahandler.dart';
 part 'src/network/handler/spawnisolatehandler.dart';
+
 
 /**
  * Set to [true] for enabling debug output from the distributed_dart library.
