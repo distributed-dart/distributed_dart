@@ -135,21 +135,21 @@ class DartProgram extends DependencyNode {
     _log("Running createSpawnUriEnvironment()");
     Completer c = new Completer();
     
-    Path hashDirPath           = _workDirPath.append("hashes/");
-    Path isolateDirectoryPath  = _workDirPath.append("isolates/");
+    Path hashDirPath     = _workDirPath.append("hashes/");
+    Path isolateDirPath  = _workDirPath.append("isolates/");
     
     _log("     workDirPath          = $_workDirPath");
     _log("     hashDirPath          = $hashDirPath");
-    _log("     isolateDirectoryPath = $isolateDirectoryPath");
+    _log("     isolateDirectoryPath = $isolateDirPath");
     
     Directory hashDirectory    = new Directory.fromPath(hashDirPath);
-    Directory isolateDirectory = new Directory.fromPath(isolateDirectoryPath);
+    Directory isolateDirectory = new Directory.fromPath(isolateDirPath);
     
     Future createHashDirFuture    = hashDirectory.create(recursive:true);
     Future createIsolateDirFuture = isolateDirectory.create(recursive:true);
     
     Future.wait([createHashDirFuture, createIsolateDirFuture]).then((_) {
-      Path spawnDirectoryPath = isolateDirectoryPath.append(this.treeHash);
+      Path spawnDirectoryPath = isolateDirPath.append(this.treeHash);
       File spawnFile = new File.fromPath(spawnDirectoryPath.join(this.path));
       
       _log("Spawn file path: ${spawnFile.path}");
