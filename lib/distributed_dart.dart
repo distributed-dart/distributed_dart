@@ -13,6 +13,7 @@ import 'package:crypto/crypto.dart';
 // Global library stuff used in different parts
 part 'src/exceptions.dart';
 part 'src/errors.dart';
+part 'src/log.dart';
 
 // Import files part
 part 'src/dart_import/util/characters.dart';
@@ -38,21 +39,3 @@ part 'src/network/handler/filehandler.dart';
 part 'src/network/handler/filerequesthandler.dart';
 part 'src/network/handler/isolatedatahandler.dart';
 part 'src/network/handler/spawnisolatehandler.dart';
-
-/**
- * Set to [true] for enabling debug output from the distributed_dart library.
- * Default value is [false].
- */
-bool logging = false;
-
-/**
- * Send standard log message to standard output. Is only showed if the 
- * [logging] variable is [true].
- */
-_log(var msg) => logging ? stdout.writeln("DIST_DART, log: ${msg}") : "";
-
-/**
- * Send error log message to standard error output. Is only showed if the 
- * [logging] variable is [true].
- */
-_err(var msg) => logging ? stderr.writeln("DIST_DART, err: ${msg}") : "";
