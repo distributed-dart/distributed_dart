@@ -97,7 +97,7 @@ class Network {
 
   Future connected;
   void send(String type, dynamic data) {
-    _sc.add(RequestHandlers.toMap(type, networkSenderId, data));
+    _sc.add(RequestHandlers.toMap(type, data));
   }
 
   /// Bind Streamtransformations on inputcomming and outgoing socket traffic
