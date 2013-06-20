@@ -6,12 +6,13 @@ part of distributed_dart;
 class NodeAddress {
   static const _HOST = "host";
   static const _PORT = "port";
-  
+  static NodeAddress _localhost;
+
   final String host;
   final int port;
   
   const NodeAddress(this.host, [this.port=12345]);
-  
+
   factory NodeAddress.fromJsonMap(Map jsonMap) {
     return new NodeAddress(jsonMap[_HOST], jsonMap[_PORT]);
   }

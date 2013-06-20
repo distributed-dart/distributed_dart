@@ -1,8 +1,5 @@
 part of distributed_dart;
 
-// throw error if someone tries to access it before it has been initialized
-NodeAddress _currentNode;
-
 /**
  * set location of received .dart files
  * if not intialized, a default directory in a os specific cache folder
@@ -11,10 +8,12 @@ NodeAddress _currentNode;
 Path _workDirPath;
 
 void registerNode(NodeAddress node, [bool allowremote=false, Path workdir]) {
-  if(_currentNode != null)
+  if(NodeAddress._localhost == null)
+    NodeAddress._localhost = node;
+  else    
     throw new UnsupportedOperationError("Can only register node once");
   
-  _currentNode = node;
+
   _workDirPath = (workdir == null) ? _getDefaultWorkDir() : workdir;
 
   if(allowremote){
