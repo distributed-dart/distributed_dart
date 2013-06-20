@@ -27,7 +27,6 @@ part 'src/dart_import/scanner.dart';
 
 // Isolate control
 part 'src/isolates/isolates.dart';
-part 'src/isolates/isolaterequests.dart';
 
 // Network system for communication between nodes
 part 'src/network/network.dart';
