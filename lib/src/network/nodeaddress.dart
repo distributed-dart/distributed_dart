@@ -9,6 +9,7 @@ class NodeAddress {
   
   final String host;
   final int port;
+  
   const NodeAddress(this.host, [this.port=12345]);
   
   factory NodeAddress.fromJsonMap(Map jsonMap) {
