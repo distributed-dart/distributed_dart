@@ -42,7 +42,7 @@ class Network {
 
   StreamController _sc = new StreamController();
   RequestHandlers _requesthandlers = new RequestHandlers();
-  IsolateNode _node;
+  NodeAddress _node;
 
   Future connected;
   void send(String type, dynamic data) {
@@ -61,7 +61,7 @@ class Network {
       .then(_bindSocket);
   }
   
-  static Network _lookupNode(IsolateNode node){
+  static Network _lookupNode(NodeAddress node){
     var key = node.toString();
     if( connections.containsKey(key)){
       return connections[key];
@@ -69,14 +69,14 @@ class Network {
   }
 
   static Network _lookupSocket(Socket s){
-    var node = new IsolateNode.fromSocket(s);
+    var node = new NodeAddress.fromSocket(s);
     var network = _lookupNode(node);
     return network;
   }
 
   Network._create();
 
-  factory Network.fromNode(IsolateNode node){
+  factory Network.fromNode(NodeAddress node){
     var net = _lookupNode(node);
     if( net == null ){
       net = new Network._create();
@@ -91,7 +91,7 @@ class Network {
     var net = _lookupSocket(s);
     if( net == null ){
       net = new Network._create();
-      net._node = new IsolateNode.fromSocket(s);
+      net._node = new NodeAddress.fromSocket(s);
       net._bindSocket(s);
       connections[net._node.toString()] = net;
     }

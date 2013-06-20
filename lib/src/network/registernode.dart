@@ -1,12 +1,7 @@
 part of distributed_dart;
 
 // throw error if someone tries to access it before it has been initialized
-IsolateNode _currentNode;
-IsolateNode get currentNode {
-  if (currentNode != null)
-    throw new UnsupportedOperationError("registerNode has not yet been called");
-  return _currentNode;
-}
+NodeAddress _currentNode;
 
 /**
  * set location of received .dart files
@@ -15,19 +10,19 @@ IsolateNode get currentNode {
  */
 Path _workDirPath;
 
-// Node Identification class
-class IsolateNode{
+/**
+ * Add something here.
+ */
+class NodeAddress {
   final String host;
   final int port;
-  IsolateNode(this.host, [int port=12345]): this.port = port;
+  const NodeAddress(this.host, [this.port=12345]);
 }
 
-bool _registerNodeCalled = false;
-void registerNode(IsolateNode node, [bool allowremote=false, Path workdir]){
-  if(_registerNodeCalled)
+void registerNode(NodeAddress node, [bool allowremote=false, Path workdir]) {
+  if(_currentNode != null)
     throw new UnsupportedOperationError("Can only register node once");
   
-  _registerNodeCalled = true;
   _currentNode = node;
   _workDirPath = (workdir == null) ? _getDefaultWorkDir() : workdir;
 

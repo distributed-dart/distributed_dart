@@ -8,13 +8,13 @@ part of distributed_dart;
   */
 class RemoteSendPort {
   final IsolateId id;
-  final IsolateNode node;
+  final NodeAddress node;
 
-  RemoteSendPort(this.id): node = IsolateNode.localhost;
+  RemoteSendPort(this.id): node = NodeAddress.localhost;
 
   RemoteSendPort.fromMap(Map m):
     id = new IsolateId.fromMap(m['id']),
-    node = new IsolateNode.fromMap(m['node']);
+    node = new NodeAddress.fromMap(m['node']);
 
   void send(dynamic data, reply){
     var request = null; // TODO: new IsolateDataRequest(data)
@@ -47,8 +47,8 @@ class IsolateId {
   IsolateId():
    id = nextid++,
    timestamp = new DateTime.now().millisecondsSinceEpoch,
-   port = IsolateNode.localhost.port,
-   host = IsolateNode.localhost.host;
+   port = NodeAddress.localhost.port,
+   host = NodeAddress.localhost.host;
 
   IsolateId.fromMap(Map m):
     id = m['id'], 
