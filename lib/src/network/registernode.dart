@@ -10,15 +10,6 @@ NodeAddress _currentNode;
  */
 Path _workDirPath;
 
-/**
- * Add something here.
- */
-class NodeAddress {
-  final String host;
-  final int port;
-  const NodeAddress(this.host, [this.port=12345]);
-}
-
 void registerNode(NodeAddress node, [bool allowremote=false, Path workdir]) {
   if(_currentNode != null)
     throw new UnsupportedOperationError("Can only register node once");
