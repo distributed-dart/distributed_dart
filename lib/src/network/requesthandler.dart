@@ -42,7 +42,7 @@ class RequestHandlers {
     var map = new Map();
     
     map[REQUEST_TYPE]      = type;
-    map[NETWORK_SENDER_ID] = networkSenderId; // Find denne via global variabel.
+    map[NETWORK_SENDER_ID] = _currentNode; // Find denne via global variabel.
     map[DATA]              = data;
     
     return map;

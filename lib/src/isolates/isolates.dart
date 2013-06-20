@@ -10,7 +10,7 @@ class RemoteSendPort {
   final IsolateId id;
   final NodeAddress node;
 
-  RemoteSendPort(this.id): node = NodeAddress.localhost;
+  RemoteSendPort(this.id): node = _currentNode;
 
   RemoteSendPort.fromMap(Map m):
     id = new IsolateId.fromMap(m['id']),

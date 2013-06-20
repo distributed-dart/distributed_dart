@@ -60,41 +60,4 @@ class Network {
     Socket.connect(_node.host,_node.port)
       .then(_bindSocket);
   }
-  
-  static Network _lookupNode(NodeAddress node){
-    var key = node.toString();
-    if( connections.containsKey(key)){
-      return connections[key];
-    }
-  }
-
-  static Network _lookupSocket(Socket s){
-    var node = new NodeAddress.fromSocket(s);
-    var network = _lookupNode(node);
-    return network;
-  }
-
-  Network._create();
-
-  factory Network.fromNode(NodeAddress node){
-    var net = _lookupNode(node);
-    if( net == null ){
-      net = new Network._create();
-      net._node = node;
-      net._connect();
-      connections[net._node.toString()] = net;
-    }
-    return net;
-  }
-  
-  factory Network.fromSocket(Socket s){
-    var net = _lookupSocket(s);
-    if( net == null ){
-      net = new Network._create();
-      net._node = new NodeAddress.fromSocket(s);
-      net._bindSocket(s);
-      connections[net._node.toString()] = net;
-    }
-    return net;
-  }
 }
