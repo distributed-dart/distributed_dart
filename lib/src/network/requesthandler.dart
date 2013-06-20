@@ -1,51 +1,50 @@
 part of distributed_dart;
 
-/**
-  * Used by request handlers to distinguish request data type
-  * If dart had Enum, this would be an Enum
-  */
-class RequestType {
-  static const int Default = -1;
-  static const int SpawnIsolate = 1;
-  static const int IsolateData = 2;
-}
-
-/**
-  * Used to assiciate a specific data request with an appropriate
-  * request handler. 
-  */
-abstract class Request implements RequestHandler{
-  final int type = RequestType.Default;
-
-  Request();
-  Request.empty();
-  
-  void requestHandler(Map request, Network reply);
-
-  /// Test wheater to handle msg or not, based on [type]
-  void runHandler(Map msg, Network reply) {
-    try {
-      if (msg['type'] == this.type) 
-        requestHandler(msg, reply);
-    } catch (e) {
-      _err(e);
-    }
-  }
-}
-
-abstract class RequestHandler {
-  final int type = RequestType.Default;
-  void requestHandler(Map request, Network reply);
-  void runHandler(Map msg, Network reply);
-}
+typedef RequestHandler(dynamic request, String networkReplyId);
 
 /**
   * Contains list of [RequestHandler]'s.
   */
 class RequestHandlers {
-  List<RequestHandler> _handlers = [];
-  void add(RequestHandler r) => _handlers.add(r);
-  Function runAll(Network reply){
-    return (Map req) => _handlers.forEach((rh) => rh.runHandler(req, reply));
+  static const String REQUEST_TYPE      = "type";
+  static const String NETWORK_SENDER_ID = "id";
+  static const String DATA              = "data";
+  
+  Map<String,RequestHandler> _handlers = new Map();
+  
+  void add(String type, RequestHandler r) {
+    if (!_handlers.containsKey(type)) {
+      _handlers[type] = r;
+    } else {
+      var m = "Already assigned RequestHandler to request type: $type.";
+      new UnsupportedOperationError(m);
+    }
+  }
+  
+  void remove(String type) {
+    if (_handlers.containsKey(type)) {
+      _handlers.remove(type);      
+    } else {
+      var m = "Cannot remove non existing RequestHandler for type: $type.";
+      new UnsupportedOperationError(m);
+    }
+  }
+  
+  void notify(Map jsonMap) {
+    String requestType     = jsonMap[REQUEST_TYPE];
+    String networkSenderId = jsonMap[NETWORK_SENDER_ID];
+    var data               = jsonMap[DATA];
+    
+    _handlers[requestType](data, networkSenderId);
+  }
+  
+  static Map toMap(String type, String networkSenderId, dynamic data) {
+    var map = new Map();
+    
+    map[REQUEST_TYPE]      = type;
+    map[NETWORK_SENDER_ID] = networkSenderId;
+    map[DATA]              = data;
+    
+    return map;
   }
 }

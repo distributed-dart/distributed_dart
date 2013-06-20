@@ -73,7 +73,8 @@ inbox(Socket socket, RequestHandlers rh){
     .transform(new ByteListDecoder())
     .transform(new StringDecoder())
     .transform(new JsonDecoder())
-    .listen(rh.runAll(new Network.fromSocket(socket)));
+    .listen(rh.notify);
+    //.listen(rh.runAll(new Network.fromSocket(socket)));
 }
 
 class Server {
@@ -95,7 +96,9 @@ class Network {
   IsolateNode _node;
 
   Future connected;
-  void send(dynamic data) => _sc.add(data);
+  void send(String type, dynamic data) {
+    _sc.add(RequestHandlers.toMap(type, networkSenderId, data));
+  }
 
   /// Bind Streamtransformations on inputcomming and outgoing socket traffic
   _bindSocket(Socket s){

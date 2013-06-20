@@ -1,7 +1,7 @@
 part of distributed_dart;
 
 // Request to spawn new isolate
-class SpawnIsolateRequest extends Request {
+class SpawnIsolateRequest {
   final int type = RequestType.SpawnIsolate;
 
   Map toJson(){
@@ -18,7 +18,7 @@ class SpawnIsolateRequest extends Request {
 }
 
 // metadata for data sent to isolate
-class IsolateDataRequest extends Request {
+class IsolateDataRequest {
   final int type = RequestType.IsolateData;
   var id;
   var data;
