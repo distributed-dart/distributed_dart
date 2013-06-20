@@ -39,22 +39,6 @@ part 'src/network/handler/filerequesthandler.dart';
 part 'src/network/handler/isolatedatahandler.dart';
 part 'src/network/handler/spawnisolatehandler.dart';
 
-bool _workDirInUse = false;
-String _workDir = ".distributed_dart_data/";
-
-set workDir(String path) {
-  if (_workDirInUse) {
-    String e = "Not allowed to set workDir variable after it is used.";
-    throw new WorkDirInUseException(e);
-  }
-  _workDir = path;
-}
-
-String get workDir {
-  _workDirInUse = true;
-  return _workDir;
-}
-
 /**
  * Set to [true] for enabling debug output from the distributed_dart library.
  * Default value is [false].
