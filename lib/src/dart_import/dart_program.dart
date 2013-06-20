@@ -135,11 +135,10 @@ class DartProgram extends DependencyNode {
     _log("Running createSpawnUriEnvironment()");
     Completer c = new Completer();
     
-    Path workDirPath           = new Path(workDir);
-    Path hashDirPath           = workDirPath.append("hashes/");
-    Path isolateDirectoryPath  = workDirPath.append("isolates/");
+    Path hashDirPath           = _workDirPath.append("hashes/");
+    Path isolateDirectoryPath  = _workDirPath.append("isolates/");
     
-    _log("     workDirPath          = $workDirPath");
+    _log("     workDirPath          = $_workDirPath");
     _log("     hashDirPath          = $hashDirPath");
     _log("     isolateDirectoryPath = $isolateDirectoryPath");
     

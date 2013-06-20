@@ -13,10 +13,10 @@ IsolateNode get currentNode {
  * if not intialized, a default directory in a os specific cache folder
  * is returned
  */
-Path _workDir;
+Path _workDirPath;
 Path get workDir {
-  if(_workDir != null)
-    return _workDir;
+  if(_workDirPath != null)
+    return _workDirPath;
 
   Path defaultPath;
   var os = Platform.operatingSystem;
@@ -47,7 +47,7 @@ void registerNode(IsolateNode node, [bool allowremote=false, Path workdir]){
     throw new UnsupportedOperationError("Can only register node once");
   _registerNodeCalled = true;
   _currentNode = node;
-  if (workdir != null)  _workDir = workdir;
+  if (workdir != null)  _workDirPath = workdir;
 
   if(allowremote){
     // start network with isolate spawn handler
