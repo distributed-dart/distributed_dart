@@ -4,8 +4,8 @@ part of distributed_dart;
 IsolateNode _currentNode;
 IsolateNode get currentNode {
   if (currentNode != null)
-    throw UnsupportedOperationError("registerNode has not yet been called");
-  return _currenNode;
+    throw new UnsupportedOperationError("registerNode has not yet been called");
+  return _currentNode;
 }
 
 /**
