@@ -14,25 +14,6 @@ IsolateNode get currentNode {
  * is returned
  */
 Path _workDirPath;
-Path get workDir {
-  if(_workDirPath != null)
-    return _workDirPath;
-
-  Path defaultPath;
-  var os = Platform.operatingSystem;
-
-  if ( os  == "macos" || os == "linux"){
-    defaultPath = new Path(Platform.environment['HOME']);
-    defaultPath = defaultPath.append('.cache/distributed_dart');
-  }
-
-  if ( os == "windows"){
-    defaultPath = new Path(Platform.environment['LOCALAPPDATA']);
-    defaultPath = defaultPath.append('distributed_dart');
-  }
-
-  return defaultPath;
-}
 
 // Node Identification class
 class IsolateNode{
@@ -45,9 +26,10 @@ bool _registerNodeCalled = false;
 void registerNode(IsolateNode node, [bool allowremote=false, Path workdir]){
   if(_registerNodeCalled)
     throw new UnsupportedOperationError("Can only register node once");
+  
   _registerNodeCalled = true;
   _currentNode = node;
-  if (workdir != null)  _workDirPath = workdir;
+  _workDirPath = (workdir == null) ? _getDefaultWorkDir() : workdir;
 
   if(allowremote){
     // start network with isolate spawn handler
@@ -56,5 +38,20 @@ void registerNode(IsolateNode node, [bool allowremote=false, Path workdir]){
     // start network with isolate without  spawn handler
     //Network.init();
   }
+}
+
+/// Returns a default value for working directory based on running OS.
+Path _getDefaultWorkDir() {
+  Path defaultPath;
+
+  if (Platform.operatingSystem == "windows"){
+    defaultPath = new Path(Platform.environment['LOCALAPPDATA']);
+    defaultPath = defaultPath.append('distributed_dart');
+  } else {
+    defaultPath = new Path(Platform.environment['HOME']);
+    defaultPath = defaultPath.append('.cache/distributed_dart');
+  }
+
+  return defaultPath;
 }
 
