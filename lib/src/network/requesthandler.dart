@@ -38,11 +38,11 @@ class RequestHandlers {
     _handlers[requestType](data, networkSenderId);
   }
   
-  static Map toMap(String type, String networkSenderId, dynamic data) {
+  static Map toMap(String type, dynamic data) {
     var map = new Map();
     
     map[REQUEST_TYPE]      = type;
-    map[NETWORK_SENDER_ID] = networkSenderId;
+    map[NETWORK_SENDER_ID] = networkSenderId; // Find denne via global variabel.
     map[DATA]              = data;
     
     return map;
