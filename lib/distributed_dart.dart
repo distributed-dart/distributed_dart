@@ -31,6 +31,7 @@ part 'src/isolates/isolaterequests.dart';
 
 // Network system for communication between nodes
 part 'src/network/network.dart';
+part 'src/network/nodeaddress.dart';
 part 'src/network/requesthandler.dart';
 part 'src/network/streamtransformations.dart';
 part 'src/network/registernode.dart';
