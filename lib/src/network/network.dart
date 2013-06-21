@@ -25,10 +25,10 @@ class Server {
   Server(){
     _requestHandlers = new RequestHandlers();
     
-    _requestHandlers.add(_NETWORK_FILE_HANDLER, fileHandler);
-    _requestHandlers.add(_NETWORK_FILE_REQUEST_HANDLER, fileRequestHandler);
-    _requestHandlers.add(_NETWORK_ISOLATE_DATA_HANDLER, isolateDataHandler);
-    _requestHandlers.add(_NETWORK_SPAWN_ISOLATE_HANDLER, spawnIsolateHandler);
+    _requestHandlers.add(_NETWORK_FILE_HANDLER, _fileHandler);
+    _requestHandlers.add(_NETWORK_FILE_REQUEST_HANDLER, _fileRequestHandler);
+    _requestHandlers.add(_NETWORK_ISOLATE_DATA_HANDLER, _isolateDataHandler);
+    _requestHandlers.add(_NETWORK_SPAWN_ISOLATE_HANDLER, _spawnIsolateHandler);
     
     ServerSocket.bind('0.0.0.0',12345).then(
         (serversocket) => serversocket.listen(
