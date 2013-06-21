@@ -127,7 +127,7 @@ class _DartProgram extends _DependencyNode {
   /**
    * Create an environment for the [_DartProgram] and all dependencies and return 
    * the path to run (with e.g. [spawnUri]) as a [Future]. Missing files will be
-   * downloaded. The created environment will be placed in the [workDir]
+   * downloaded. The created environment will be placed in the [_workDirPath]
    * directory where also a cache will be created for previously dowloaded
    * files.
    */
@@ -179,8 +179,7 @@ class _DartProgram extends _DependencyNode {
             List<_RequestBundle> missingFiles = new List<_RequestBundle>();
             
             Future.wait(neededFiles.map((_FileNode node) {
-              Path hashFilePath = 
-                  hashDirPath.append("${node.fileHashString}.dart");
+              Path hashFilePath = hashDirPath.append(node.fileHashString);
               
               File hashFile = new File.fromPath(hashFilePath);
               
