@@ -2,6 +2,6 @@ part of distributed_dart;
 
 String _NETWORK_FILE_HANDLER = "file"; 
 
-fileHandler(dynamic request, String networkReplyId) {
+_fileHandler(dynamic request, NodeAddress senderAddress) {
   
 }

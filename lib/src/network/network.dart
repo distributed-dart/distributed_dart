@@ -10,7 +10,7 @@ outbox(Socket socket, Stream stream){
 }
 
 /// data on socket is passed to messagehandlers
-inbox(Socket socket, RequestHandlers rh){
+inbox(Socket socket, _RequestHandlers rh){
   socket
     .transform(new ByteListDecoder())
     .transform(new StringDecoder())
@@ -20,15 +20,15 @@ inbox(Socket socket, RequestHandlers rh){
 }
 
 class Server {
-  RequestHandlers _requestHandlers;
+  _RequestHandlers _requestHandlers;
 
   Server(){
-    _requestHandlers = new RequestHandlers();
+    _requestHandlers = new _RequestHandlers();
     
-    _requestHandlers.add(_NETWORK_FILE_HANDLER, fileHandler);
-    _requestHandlers.add(_NETWORK_FILE_REQUEST_HANDLER, fileRequestHandler);
-    _requestHandlers.add(_NETWORK_ISOLATE_DATA_HANDLER, isolateDataHandler);
-    _requestHandlers.add(_NETWORK_SPAWN_ISOLATE_HANDLER, spawnIsolateHandler);
+    _requestHandlers.add(_NETWORK_FILE_HANDLER, _fileHandler);
+    _requestHandlers.add(_NETWORK_FILE_REQUEST_HANDLER, _fileRequestHandler);
+    _requestHandlers.add(_NETWORK_ISOLATE_DATA_HANDLER, _isolateDataHandler);
+    _requestHandlers.add(_NETWORK_SPAWN_ISOLATE_HANDLER, _spawnIsolateHandler);
     
     ServerSocket.bind('0.0.0.0',12345).then(
         (serversocket) => serversocket.listen(
@@ -41,12 +41,12 @@ class Network {
   static Map<String, Network> connections = {};
 
   StreamController _sc = new StreamController();
-  RequestHandlers _requesthandlers = new RequestHandlers();
+  _RequestHandlers _requesthandlers = new _RequestHandlers();
   NodeAddress _node;
 
   Future connected;
   void send(String type, dynamic data) {
-    _sc.add(RequestHandlers.toMap(type, data));
+    _sc.add(_RequestHandlers.toMap(type, data));
   }
 
   /// Bind Streamtransformations on inputcomming and outgoing socket traffic

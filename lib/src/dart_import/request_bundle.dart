@@ -7,7 +7,7 @@ part of distributed_dart;
  * [hashFilePath]. At last there should be created a link between [hashFilePath] 
  * and [filePath].
  */
-class RequestBundle {
+class _RequestBundle {
   /// Hash value to request.
   final String hash;
   
@@ -17,12 +17,12 @@ class RequestBundle {
   /// Path to link there should link to [hashFilePath].
   final Path filePath;
   
-  /// Create a [RequestBundle] object.
-  const RequestBundle(this.hash, this.hashFilePath, this.filePath);
+  /// Create a [_RequestBundle] object.
+  const _RequestBundle(this.hash, this.hashFilePath, this.filePath);
   
   /// Create link a link saved as [filePath] and links to [hashFilePath].
   Future createLink() {
-    return DartCodeDb.createLink(this.hashFilePath, this.filePath);
+    return _DartCodeDb.createLink(this.hashFilePath, this.filePath);
   }
   
   /// Save [data] into the file [hashFilePath].

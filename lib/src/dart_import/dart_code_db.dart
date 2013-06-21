@@ -10,14 +10,14 @@ part of distributed_dart;
  * before. The purpose is to give fast access to this data without waiting for 
  * the disk.
  */
-class DartCodeDb {
+class _DartCodeDb {
   /*
    * Resolve a given Path into a cached FileNode instance. If a Path is 
    * already parsed one time we don’t need to do it again.
    * 
    * Path => FileNode instance (as future)
    */
-  static Map<Path,Future<FileNode>> _pathToFileNode = new Map();
+  static Map<Path,Future<_FileNode>> _pathToFileNode = new Map();
   
   /*
    * Resolve a given hash checksum value into to content of the file. Because we 
@@ -48,20 +48,20 @@ class DartCodeDb {
    * Download file requests by create a network request, send it to the network 
    * and wait for the answer. When all the files is downloaded it is saved to 
    * the disk locally and linked to the right directories as described in the 
-   * [RequestBundle] objects. The returned [Future] is finished when all steps 
+   * [_RequestBundle] objects. The returned [Future] is finished when all steps 
    * in the process is finished.
    */
-  static Future downloadFilesAndCreateLinks(List<RequestBundle> requests) {
+  static Future downloadFilesAndCreateLinks(List<_RequestBundle> requests) {
     if (logging) {
       _log("Running downloadFilesAndCreateLinks(");
-      requests.forEach((RequestBundle r) {
+      requests.forEach((_RequestBundle r) {
         _log("     ${r.hash}:");
         _log("        hashFilePath: ${r.hashFilePath}");
         _log("        filePath:     ${r.filePath}");
       });
     }
     
-    return Future.wait(requests.map((RequestBundle r) {
+    return Future.wait(requests.map((_RequestBundle r) {
       return getSourceFromHash(r.hash).then((List<int> fileContent) {
         File newFile = new File.fromPath(r.hashFilePath);
         
@@ -73,14 +73,14 @@ class DartCodeDb {
   }
   
   /**
-   * Create [DartProgram] object from URI to a valid Dart program. The 
-   * [DartProgram] object contains information about all dependencies for 
+   * Create [_DartProgram] object from URI to a valid Dart program. The 
+   * [_DartProgram] object contains information about all dependencies for 
    * the program.
    * 
    * [useCache] should be set to false if some of the files has been changed
    * on the filesystem while the program has been running.
    */
-  static Future<DartProgram> resolveDartProgram(String uri, 
+  static Future<_DartProgram> resolveDartProgram(String uri, 
                                                 {bool useCache: true}) {
     _log("Running resolveDartProgram($uri, $useCache)");
     
@@ -88,25 +88,25 @@ class DartCodeDb {
       Path dir = new Path(path).directoryPath;
       Path packageDir = dir.append("packages");
       
-      return DartCodeDb._resolve(path, packageDir, useCache:useCache).then(
-          (FileNode node) {
-            DartProgram code = new DartProgram(node);
+      return _DartCodeDb._resolve(path, packageDir, useCache:useCache).then(
+          (_FileNode node) {
+            _DartProgram code = new _DartProgram(node);
             return code;
           });
     });
   }
   
   /**
-   * Resolve a URI into a [FileNode] object. This method looks like the 
+   * Resolve a URI into a [_FileNode] object. This method looks like the 
    * same as [DartCodeDb.resolveDartProgram] but the main difference is this 
-   * method returns a [FileNode] object when the [DartCodeDb.resolveDartProgram] 
-   * method returns a [DartProgram] object. The reason for this design is 
+   * method returns a [_FileNode] object when the [DartCodeDb.resolveDartProgram] 
+   * method returns a [_DartProgram] object. The reason for this design is 
    * [DartCodeDb._resolve] is designed to be called recursive.
    * 
    * [useCache] should be set to false if some of the files has been changed
    * on the filesystem while the program has been running.
    */
-  static Future<FileNode> _resolve(String uri, 
+  static Future<_FileNode> _resolve(String uri, 
                                   Path packageDir, 
                                   {bool useCache: true} ) {
     
@@ -116,7 +116,7 @@ class DartCodeDb {
     Path path = new Path(uri);
     Path dir = path.directoryPath;
     
-    Future<FileNode> node;
+    Future<_FileNode> node;
     
     if (useCache) {
       _log("Looking in cache for FileNode object.");
@@ -160,8 +160,8 @@ class DartCodeDb {
         
         return new Stream.fromIterable([bytes]).transform(new StringDecoder())
           .transform(new LineTransformer())
-          .transform(new StreamTransformer<String, Future<FileNode>>(
-            handleData: (String depUri, EventSink<Future<FileNode>> sink) {
+          .transform(new StreamTransformer<String, Future<_FileNode>>(
+            handleData: (String depUri, EventSink<Future<_FileNode>> sink) {
               String depUriTrim = depUri.trim();
               
               // If started with # it is a comment and should be ignored
@@ -169,12 +169,12 @@ class DartCodeDb {
                 String file = dir.join(new Path(depUriTrim)).toNativePath();
                 sink.add(_resolve(file, packageDir, useCache: useCache));  
               }
-          })).toList().then((List<Future<FileNode>> dependencies) {
-            return Future.wait(dependencies).then((List<FileNode> list) {
+          })).toList().then((List<Future<_FileNode>> dependencies) {
+            return Future.wait(dependencies).then((List<_FileNode> list) {
               if (list.length > 0) {
-                return new DependencyNode(path, hash, list);
+                return new _DependencyNode(path, hash, list);
               } else {
-                return new FileNode(path, hash);
+                return new _FileNode(path, hash);
               }
             });
           });
@@ -183,7 +183,7 @@ class DartCodeDb {
       // Only scan Dart files. All other files should just be accepted.
       if (extension != "dart") {
         _log("File is not distdartdeps or dart so we just return it.");
-        return new FileNode(path, hash);
+        return new _FileNode(path, hash);
       }
       
       // Parse the Dart file with the scanner and get dependencies
@@ -192,7 +192,7 @@ class DartCodeDb {
       Runes runes = (new String.fromCharCodes(bytes)).runes;
       _log("Runes created!");
       
-      Scanner scanner = new Scanner(runes);
+      _Scanner scanner = new _Scanner(runes);
       _log("Scanner created!");
       
       Set<String> dependencies = scanner.getDependencies().toSet();
@@ -224,14 +224,14 @@ class DartCodeDb {
         _log("(${filePath.toNativePath()}, $packageDir, useCache:$useCache))");
         
         return _resolve(filePath.toNativePath(), packageDir, useCache:useCache);
-      })).then((List<FileNode> dependencies) {
+      })).then((List<_FileNode> dependencies) {
         if (dependencies.length > 0) {
-          return new DependencyNode(path,hash,dependencies);
+          return new _DependencyNode(path,hash,dependencies);
         } else {
-          return new FileNode(path,hash); 
+          return new _FileNode(path,hash); 
         }
       });
-    }).then((FileNode origNode) {
+    }).then((_FileNode origNode) {
       _log("Got all dependencies for $uri");
       
       if (origNode.name.endsWith(".distdartdeps")) {
@@ -249,11 +249,11 @@ class DartCodeDb {
           _log("($distDartDepsFile, $packageDir, useCache:$useCache))");
           
           return _resolve(distDartDepsFile, packageDir, useCache:useCache).then(
-              (FileNode node) {
-                if (origNode is DependencyNode) {
+              (_FileNode node) {
+                if (origNode is _DependencyNode) {
                   _log("Original node is a DependencyNode.");
                   
-                  List<FileNode> newDependencies = 
+                  List<_FileNode> newDependencies = 
                       origNode._dependencies.toList(growable:true);
                   
                   newDependencies.add(node);
@@ -263,7 +263,7 @@ class DartCodeDb {
                 } else {
                   _log("Convert original FileNode to DependencyNode.");
                   
-                  return new DependencyNode(origNode.path, 
+                  return new _DependencyNode(origNode.path, 
                                             origNode.fileHash, [node]);
                 }
               });

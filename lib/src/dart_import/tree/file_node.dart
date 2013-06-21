@@ -1,11 +1,11 @@
 part of distributed_dart;
 
 /// Represents a file in the tree without dependencies.
-class FileNode {
+class _FileNode {
   Path _path;
   List<int> _fileHash;
 
-  FileNode(this._path, this._fileHash);
+  _FileNode(this._path, this._fileHash);
   
   /// File name of the file the object represent.
   String get name => _path.filename;
@@ -22,16 +22,16 @@ class FileNode {
   
   /// Insert this object into a [Set] and return the [Set]. If [set] is
   /// provided the method will use this [Set] instead of creating a new one.
-  Set<FileNode> getFileNodes([Set<FileNode> set]) {
+  Set<_FileNode> getFileNodes([Set<_FileNode> set]) {
     if (set == null) {
-      set = new Set<FileNode>();
+      set = new Set<_FileNode>();
     }
     set.add(this);
     return set;
   }
   
   /// Returns a copy of this object.
-  FileNode get copy => new FileNode(_path, _fileHash);
+  _FileNode get copy => new _FileNode(_path, _fileHash);
   
   int get hashCode => _path.hashCode;
   
@@ -40,7 +40,7 @@ class FileNode {
       return true;
     }
     
-    if (other is FileNode) {
+    if (other is _FileNode) {
       if (_path.toString() != other._path.toString()) return false;
       if (!_compareLists(this._fileHash, other._fileHash)) return false;
       

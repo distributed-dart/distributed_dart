@@ -1,14 +1,14 @@
 part of distributed_dart;
 
-typedef RequestHandler(dynamic request, String networkReplyId);
+typedef RequestHandler(dynamic request, NodeAddress senderAddress);
 
 /**
   * Contains list of [RequestHandler]'s.
   */
-class RequestHandlers {
-  static const String REQUEST_TYPE      = "type";
-  static const String NETWORK_SENDER_ID = "id";
-  static const String DATA              = "data";
+class _RequestHandlers {
+  static const String REQUEST_TYPE = "type";
+  static const String NODE_ADDRESS = "address";
+  static const String DATA         = "data";
   
   Map<String,RequestHandler> _handlers = new Map();
   
@@ -31,19 +31,19 @@ class RequestHandlers {
   }
   
   void notify(Map jsonMap) {
-    String requestType     = jsonMap[REQUEST_TYPE];
-    String networkSenderId = jsonMap[NETWORK_SENDER_ID];
-    var data               = jsonMap[DATA];
+    String requestType  = jsonMap[REQUEST_TYPE];
+    NodeAddress address = new NodeAddress.fromJsonMap(jsonMap[NODE_ADDRESS]);
+    var data            = jsonMap[DATA];
     
-    _handlers[requestType](data, networkSenderId);
+    _handlers[requestType](data, address);
   }
   
   static Map toMap(String type, dynamic data) {
     var map = new Map();
     
-    map[REQUEST_TYPE]      = type;
-    map[NETWORK_SENDER_ID] = NodeAddress._localhost;
-    map[DATA]              = data;
+    map[REQUEST_TYPE] = type;
+    map[NODE_ADDRESS] = NodeAddress._localhost;
+    map[DATA]         = data;
     
     return map;
   }
