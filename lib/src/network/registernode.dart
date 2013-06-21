@@ -7,7 +7,7 @@ part of distributed_dart;
  */
 Path _workDirPath;
 
-void registerNode(NodeAddress node, [bool allowremote=false, Path workdir]) {
+void registerNode(NodeAddress node, [bool allowremote=false, String workdir]) {
   //kregisterNode must not be called more than once
   if( ! NodeAddress._localhost == null){
     throw new UnsupportedOperationError("Can only register node once");
@@ -17,7 +17,7 @@ void registerNode(NodeAddress node, [bool allowremote=false, Path workdir]) {
   NodeAddress._localhost = node;
   
   // set path to where to store received files
-  _workDirPath = (workdir == null) ? _getDefaultWorkDir() : workdir;
+  _workDirPath = (workdir == null) ? _getDefaultWorkDir() : new Path(workdir);
   
   // setup requesthandlers
   _RequestHandler.allow(_NETWORK_FILE_HANDLER);
