@@ -36,8 +36,8 @@ class Network {
     return _connections[node];
   }
   
-  static void initServer(){   
-    ServerSocket.bind('0.0.0.0',12345).then(
+  static void _initServer(){   
+    ServerSocket.bind('0.0.0.0',NodeAddress._localhost.port).then(
         (serversocket) => serversocket.listen(
           (socket) => _incomming(socket),
           onError: (e) => _err("ServerSocket Error: $e")));

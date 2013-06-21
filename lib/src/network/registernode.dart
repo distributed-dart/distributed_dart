@@ -29,7 +29,7 @@ void registerNode(NodeAddress node, [bool allowremote=false, Path workdir]) {
   }
   
   // start listening for incomming requests
-  Network.initServer();
+  Network._initServer();
 }
 
 /// Returns a default value for working directory based on running OS.
