@@ -131,7 +131,7 @@ class _DartProgram extends _DependencyNode {
    * directory where also a cache will be created for previously dowloaded
    * files.
    */
-  Future<String> createSpawnUriEnvironment() {
+  Future<String> createSpawnUriEnvironment(Network sender) {
     _log("Running createSpawnUriEnvironment()");
     Completer c = new Completer();
     
@@ -176,7 +176,7 @@ class _DartProgram extends _DependencyNode {
             // This step insert the files into the environment. First its try
             // find the files in the HashDir and if this is not possible the
             // file will be downloaded from the network.
-            List<_RequestBundle> missingFiles = new List<_RequestBundle>();
+            List<_RequestBundle> missing = new List<_RequestBundle>();
             
             Future.wait(neededFiles.map((_FileNode node) {
               Path hashFilePath = hashDirPath.append(node.fileHashString);
@@ -191,7 +191,7 @@ class _DartProgram extends _DependencyNode {
                 if (!hashFileExists) {
                   // Add file to list of files to download
                   _log("Add missing file to download list: ${node.name}");
-                  missingFiles.add(new _RequestBundle(node.fileHashString,
+                  missing.add(new _RequestBundle(node.fileHashString,
                                                        hashFilePath, filePath));
                   return;
                 } else {
@@ -201,9 +201,9 @@ class _DartProgram extends _DependencyNode {
                 }
               });
             })).then((_) {
-              if (missingFiles.length > 0) {
+              if (missing.length > 0) {
                 _log("Download missing files from network:");
-                _DartCodeDb.downloadFilesAndCreateLinks(missingFiles).then((_) {
+                _DartCodeDb.downloadAndPrepareFiles(missing,sender).then((_) {
                   c.complete(spawnFile.path);
                 });
               } else {

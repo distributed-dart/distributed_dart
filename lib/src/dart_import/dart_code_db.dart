@@ -51,7 +51,8 @@ class _DartCodeDb {
    * [_RequestBundle] objects. The returned [Future] is finished when all steps 
    * in the process is finished.
    */
-  static Future downloadFilesAndCreateLinks(List<_RequestBundle> requests) {
+  static Future downloadAndPrepareFiles(List<_RequestBundle> requests,
+                                        Network sender) {
     if (logging) {
       _log("Running downloadFilesAndCreateLinks(");
       requests.forEach((_RequestBundle r) {
