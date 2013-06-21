@@ -1,6 +1,6 @@
 part of distributed_dart;
 
-typedef RequestHandler(dynamic request, NodeAddress address);
+typedef RequestHandler(dynamic request, NodeAddress senderAddress);
 
 /**
   * Contains list of [RequestHandler]'s.
