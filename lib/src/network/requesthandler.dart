@@ -5,7 +5,7 @@ typedef RequestHandler(dynamic request, NodeAddress address);
 /**
   * Contains list of [RequestHandler]'s.
   */
-class RequestHandlers {
+class _RequestHandlers {
   static const String REQUEST_TYPE = "type";
   static const String NODE_ADDRESS = "address";
   static const String DATA         = "data";
