@@ -10,21 +10,16 @@ class RemoteSendPort {
   final IsolateId id;
   final NodeAddress node;
 
-  RemoteSendPort(this.id): node = NodeAddress.localhost;
+  RemoteSendPort(this.id): node = NodeAddress._localhost;
 
   RemoteSendPort.fromMap(Map m):
-    id = new IsolateId.fromMap(m['id']),
-    node = new NodeAddress.fromMap(m['node']);
+    id = new IsolateId.fromJsonMap(m['id']),
+    node = new NodeAddress.fromJsonMap(m['node']);
 
   void send(dynamic data, reply){
-    var request = null; // TODO: new IsolateDataRequest(data)
-    new Network.fromNode(node).send(request);
   }
   
   Future call(dynamic data){
-    var c = new Completer();
-    //new Network.fromNode(node).send(new IsolateDataRequest());
-    return c.future;
   }
 
   /// stream interface
@@ -40,33 +35,26 @@ class IsolateId {
   static int nextid = 0;
 
   final int id;
-  final int timestamp;
-  final int port;
-  final String host;
+  final NodeAddress node;
+  
 
   IsolateId():
    id = nextid++,
-   timestamp = new DateTime.now().millisecondsSinceEpoch,
-   port = NodeAddress.localhost.port,
-   host = NodeAddress.localhost.host;
-
-  IsolateId.fromMap(Map m):
-    id = m['id'], 
-    timestamp = m['timestamp'], 
-    port = m['port'],
-    host = m['host'];
+   node = NodeAddress._localhost;
   
+  IsolateId.fromJsonMap(Map map):
+    id = map['id'],
+    node = new NodeAddress.fromJsonMap(map['node']);
+
   Map toJson(){
-   var obj = { 
+   var obj = {
      'id' : id,
-     'timestamp': timestamp,
-     'port': port, 
-     'host' : host 
+     'node' : node
    }; 
    return obj;
   }
 
-  String toString() => "$host:$id:$timestamp";
+  String toString() => "$node:$id";
 }
 
 /**
@@ -142,7 +130,7 @@ IsolateSink streamSpawnUriRemote(String uri){
   // setup stream listener to network object.
   bindNetwork(IsolateId id){
     sc.stream
-      .transform(IsolateDataRequest.transform(id))
+      //.transform(IsolateDataRequest.transform(id))
       .listen((d) => RemoteIsolate.Lookup(id).send(d,null));
   }
 
