@@ -8,21 +8,28 @@ part of distributed_dart;
 Path _workDirPath;
 
 void registerNode(NodeAddress node, [bool allowremote=false, Path workdir]) {
-  if(NodeAddress._localhost == null)
-    NodeAddress._localhost = node;
-  else    
+  //kregisterNode must not be called more than once
+  if( ! NodeAddress._localhost == null){
     throw new UnsupportedOperationError("Can only register node once");
-  
-
-  _workDirPath = (workdir == null) ? _getDefaultWorkDir() : workdir;
-
-  if(allowremote){
-    // start network with isolate spawn handler
-    //Network.init();
-  } else {
-    // start network with isolate without  spawn handler
-    //Network.init();
   }
+
+  // set local identification
+  NodeAddress._localhost = node;
+  
+  // set path to where to store received files
+  _workDirPath = (workdir == null) ? _getDefaultWorkDir() : workdir;
+  
+  // setup requesthandlers
+  _RequestHandler.allow(_NETWORK_FILE_HANDLER);
+  _RequestHandler.allow(_NETWORK_FILE_REQUEST_HANDLER);
+  _RequestHandler.allow(_NETWORK_ISOLATE_DATA_HANDLER);
+  
+  if(allowremote){
+    _RequestHandler.allow(_NETWORK_SPAWN_ISOLATE_HANDLER);
+  }
+  
+  // start listening for incomming requests
+  Network.initServer();
 }
 
 /// Returns a default value for working directory based on running OS.

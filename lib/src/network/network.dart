@@ -1,63 +1,64 @@
 part of distributed_dart;
 
-/// data on stream is encoded and sent to socket
-outbox(Socket socket, Stream stream){
-  stream
-   .transform(new JsonEncoder())
-   .transform(new StringEncoder())
-   .transform(new ByteListEncoder())
-   .listen(socket.add);
-}
+class Network {
+  
+  /// only one connection for each remote host, shared by all
+  static Map<NodeAddress, Network> _connections = {};
 
-/// data on socket is passed to messagehandlers
-inbox(Socket socket, _RequestHandlers rh){
-  socket
+  /*
+   *  acts as a buffer for incomming data
+   *  a listening socket is not registerd before a connection has been made
+   *  but data can be added to the sink anyway 
+   */
+  StreamController _sc = new StreamController();
+  
+  NodeAddress _node;
+
+  void send(String type, dynamic data) {
+    _sc.sink.add(_RequestHandler.annotateData(type, data));
+  }
+
+  /// Connect to remote host
+  Network._connect(this._node) {
+    Socket.connect(_node.host,_node.port)
+      .then((socket){
+        _incomming(socket);
+        _outgoing(socket);
+      });
+  }
+  
+  /// return a shared network object for each unique 
+  factory Network(NodeAddress node){
+    if(! _connections.containsKey(node)){
+      var network = new Network._connect(_node);
+      _connections[node] = network;
+    }
+    return _connections[node];
+  }
+  
+  static void initServer(){   
+    ServerSocket.bind('0.0.0.0',12345).then(
+        (serversocket) => serversocket.listen(
+          (socket) => _incomming(socket),
+          onError: (e) => _err("ServerSocket Error: $e")));
+  }
+  
+  /// outging data is encoded, and sent via the shared socket
+  _outgoing(Socket socket){
+    _sc.stream
+    .transform(new JsonEncoder())
+    .transform(new StringEncoder())
+    .transform(new ByteListEncoder())
+    .listen(socket.add);
+  }
+
+  /// all incomming data will be handled by the [_RequestHandler]
+  static _incomming(Socket socket){
+    socket
     .transform(new ByteListDecoder())
     .transform(new StringDecoder())
     .transform(new JsonDecoder())
-    .listen(rh.notify);
-    //.listen(rh.runAll(new Network.fromSocket(socket)));
-}
-
-class Server {
-  _RequestHandlers _requestHandlers;
-
-  Server(){
-    _requestHandlers = new _RequestHandlers();
-    
-    _requestHandlers.add(_NETWORK_FILE_HANDLER, _fileHandler);
-    _requestHandlers.add(_NETWORK_FILE_REQUEST_HANDLER, _fileRequestHandler);
-    _requestHandlers.add(_NETWORK_ISOLATE_DATA_HANDLER, _isolateDataHandler);
-    _requestHandlers.add(_NETWORK_SPAWN_ISOLATE_HANDLER, _spawnIsolateHandler);
-    
-    ServerSocket.bind('0.0.0.0',12345).then(
-        (serversocket) => serversocket.listen(
-          (socket) => inbox(socket, _requestHandlers),
-          onError: (e) => _err("ServerSocket Error: $e")));
+    .listen(_RequestHandler.notify);
   }
-}
-
-class Network {
-  static Map<String, Network> connections = {};
-
-  StreamController _sc = new StreamController();
-  _RequestHandlers _requesthandlers = new _RequestHandlers();
-  NodeAddress _node;
-
-  Future connected;
-  void send(String type, dynamic data) {
-    _sc.add(_RequestHandlers.toMap(type, data));
-  }
-
-  /// Bind Streamtransformations on inputcomming and outgoing socket traffic
-  _bindSocket(Socket s){
-    outbox(s, _sc.stream);
-    inbox(s, _requesthandlers);
-  }
-
-  /// Connect to [Network.node]
-  _connect() {
-    Socket.connect(_node.host,_node.port)
-      .then(_bindSocket);
-  }
+  
 }

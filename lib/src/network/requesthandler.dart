@@ -5,40 +5,48 @@ typedef RequestHandler(dynamic request, NodeAddress senderAddress);
 /**
   * Contains list of [RequestHandler]'s.
   */
-class _RequestHandlers {
+class _RequestHandler {
   static const String REQUEST_TYPE = "type";
   static const String NODE_ADDRESS = "address";
   static const String DATA         = "data";
+  static Set<String> allowed = new Set();
   
-  Map<String,RequestHandler> _handlers = new Map();
+  static allow(String handler) => allowed.add(handler);
+  static disallow(String handler) => allowed.remove(handler);
   
-  void add(String type, RequestHandler r) {
-    if (!_handlers.containsKey(type)) {
-      _handlers[type] = r;
-    } else {
-      var m = "Already assigned RequestHandler to request type: $type.";
-      new UnsupportedOperationError(m);
-    }
-  }
-  
-  void remove(String type) {
-    if (_handlers.containsKey(type)) {
-      _handlers.remove(type);      
-    } else {
-      var m = "Cannot remove non existing RequestHandler for type: $type.";
-      new UnsupportedOperationError(m);
-    }
-  }
-  
-  void notify(Map jsonMap) {
+  static void notify(Map jsonMap) {
     String requestType  = jsonMap[REQUEST_TYPE];
-    NodeAddress address = new NodeAddress.fromJsonMap(jsonMap[NODE_ADDRESS]);
+    NodeAddress sender  = new NodeAddress.fromJsonMap(jsonMap[NODE_ADDRESS]);
     var data            = jsonMap[DATA];
     
-    _handlers[requestType](data, address);
+    if (! allowed.contains(requestType)){
+      _log("request : $requestType from ${sender.host} denied");
+      return;
+    }
+
+    switch (requestType){
+      case _NETWORK_FILE_HANDLER:
+        _fileHandler(data, sender);
+        break;
+        
+      case _NETWORK_FILE_REQUEST_HANDLER:
+        _fileRequestHandler(data, sender);
+        break;
+        
+      case _NETWORK_ISOLATE_DATA_HANDLER:
+        _isolateDataHandler(data, sender);
+        break;
+        
+      case _NETWORK_SPAWN_ISOLATE_HANDLER:
+        _spawnIsolateHandler(data, sender);
+        break;
+    }
   }
   
-  static Map toMap(String type, dynamic data) {
+  /**
+   * Wrap data in map with type and sender annotation
+   */
+  static Map annotateData(String type, dynamic data) {
     var map = new Map();
     
     map[REQUEST_TYPE] = type;
