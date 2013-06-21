@@ -18,7 +18,7 @@ class _RequestBundle {
   final Path filePath;
   
   /// Create a [_RequestBundle] object.
-  const _RequestBundle(this.hash, this.hashFilePath, this.filePath);
+  _RequestBundle(this.hash, this.hashFilePath, this.filePath);
   
   /// Create link a link saved as [filePath] and links to [hashFilePath].
   Future createLink() {
@@ -36,5 +36,23 @@ class _RequestBundle {
    */
   Future saveFileAndCreateLink(List<int> data) {
     saveFile(data).then((_) => createLink());
+  }
+  
+  int get hashCode => hashFilePath.hashCode;
+  
+  bool operator ==(other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    
+    if (other is _RequestBundle && 
+        hash == other.hash && 
+        hashFilePath == other.hashFilePath &&
+        filePath == filePath) {
+      
+      return true;
+    }
+    
+    return false;
   }
 }
