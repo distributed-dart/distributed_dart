@@ -11,7 +11,7 @@ class NodeAddress {
   final String host;
   final int port;
   
-  const NodeAddress(this.host, [this.port=12345]);
+  NodeAddress(this.host, [this.port=12345]);
 
   factory NodeAddress.fromJsonMap(Map jsonMap) {
     return new NodeAddress(jsonMap[_HOST], jsonMap[_PORT]);
@@ -26,5 +26,22 @@ class NodeAddress {
     map[_PORT] = port;
     
     return map;
+  }
+  
+  int get hashCode => host.hashCode + port;
+  
+  bool operator ==(other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    
+    if (other is NodeAddress && 
+        host == other.host && 
+        port == other.port) {
+      
+      return true;
+    }
+    
+    return false;
   }
 }
