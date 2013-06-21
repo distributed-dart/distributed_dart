@@ -12,7 +12,7 @@ part of distributed_dart;
  * make it easy to get details like import statements directly without need of
  * parsing tokens._
  */
-class Scanner {
+class _Scanner {
   List<int> _bytes;
   int _byteOffset;
   List<String> _dependencies;
@@ -28,10 +28,10 @@ class Scanner {
   String _keywordBefore;
   
   /**
-   * Create new instance of [Scanner] to parse a instance of [Runes]. The 
+   * Create new instance of [_Scanner] to parse a instance of [Runes]. The 
    * instance of [Runes] should contain the content of a syntax valid Dart file.
    */
-  Scanner(Runes sourcecode) {
+  _Scanner(Runes sourcecode) {
     _bytes = sourcecode.toList(growable: false);
   }
   

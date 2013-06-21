@@ -60,17 +60,17 @@ String _hashListToString(List<int> list) {
  * 
  * The return value is the number of parts there are deleted from each path.
  */
-int _shortenPaths(List<FileNode> dependencies) {
+int _shortenPaths(List<_FileNode> dependencies) {
   _log("Running _shortenPaths($dependencies)");
   
   // Get all segments of all paths in dependencies and this DartCode instance.
-  List<List<String>> paths = dependencies.map((FileNode node) {
+  List<List<String>> paths = dependencies.map((_FileNode node) {
     return node.path.segments();
   }).toList(growable: false);
   
   int segmentsToRemove = _countEqualSegments(paths);
   
-  dependencies.forEach((FileNode node) {
+  dependencies.forEach((_FileNode node) {
     node._path = _removeSegmentsOfPath(node._path, segmentsToRemove);
   });
   
