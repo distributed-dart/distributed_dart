@@ -71,7 +71,6 @@ class _RemoteSendPort {
   }
 }
 
-
 /**
   * Lookup table, contains reference to all physical isolates spawned on the
   * current Node.
@@ -104,11 +103,48 @@ class _LocalIsolate{
   }
 }
 
+class _RemoteProxy {
+
+  /// requestid mapped to functions that completes a future
+  static Map<_IsolateId, Function> subscribers = {};
+  
+  /// returns a future, which is completed when the node is notified by
+  /// a requesthandler
+  static Future<_RemoteSendPort> subscribe(_IsolateId requestid){
+    var c = new Completer();
+    subscribers[requestid] = (_RemoteSendPort port){
+      c.complete(port);
+      subscribers.remove(requestid);
+    };
+    return c.future;
+  }
+  
+  static notify(_IsolateId, _RemoteSendPort){
+    subscribers[_IsolateId](_RemoteSendPort);
+  }
+}
+
 // PUBLIC function
 SendPort spawnUriRemote(String uri, NodeAddress node){
-  var request = _DartCodeDb.resolveDartProgram(uri);  
-  new Network(node).send(_NETWORK_SPAWN_ISOLATE_HANDLER, request);
+  var requestId = new _IsolateId();
   var rp = new ReceivePort();
-  rp.receive((msg,reply) => print(msg));
+  var buffer = new StreamController();
+  rp.receive((msg,reply) => buffer.sink.add({'msg':msg,'reply':reply}));
+  
+  _RemoteProxy
+    .subscribe(requestId)
+    .then((_RemoteSendPort rsp){
+      buffer.stream.listen((data){
+        var msg = data['msg'];
+        var reply = data['reply'];
+        rsp.send(data, reply);
+      });
+    });
+  
+  
+  _DartCodeDb.resolveDartProgram(uri).then((_DartProgram dp){
+    new _spawnIsolateRequest(requestId,dp).sendTo(node);
+  });
+
   return rp.toSendPort();
 }
