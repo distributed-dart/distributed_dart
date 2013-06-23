@@ -28,20 +28,12 @@ class NodeAddress {
     return map;
   }
   
+  /// identical and '==' overload
   int get hashCode => host.hashCode + port;
-  
   bool operator ==(other) {
     if (identical(this, other)) {
       return true;
     }
-    
-    if (other is NodeAddress && 
-        host == other.host && 
-        port == other.port) {
-      
-      return true;
-    }
-    
-    return false;
+    return (other is NodeAddress && host == other.host && port == other.port);
   }
 }

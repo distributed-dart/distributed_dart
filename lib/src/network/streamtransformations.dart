@@ -128,7 +128,7 @@ class IsolateCommunication {
       seen.remove(object);
       return object;
     } else if (object is SendPort) {
-      return new LocalIsolate.fromSendPort(object).toRemoteSendPort();
+      return new _LocalIsolate.fromSendPort(object).toRemoteSendPort();
     } else {
       checkCycle(object);
       var r = scanAndReplaceObject(object.toJson());

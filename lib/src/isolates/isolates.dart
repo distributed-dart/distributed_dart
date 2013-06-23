@@ -1,153 +1,114 @@
 part of distributed_dart;
 
 /**
-  * Sendport Proxy
-  * Reference to a specific [LocalIsolate].
-  * To send a [SendPort] to a remote host, it must be wrapped in a
-  * [LocalIsolate] and sent as a [RemoteSendPort]
-  */
-class RemoteSendPort {
-  final IsolateId id;
-  final NodeAddress node;
-
-  RemoteSendPort(this.id): node = NodeAddress._localhost;
-
-  RemoteSendPort.fromMap(Map m):
-    id = new IsolateId.fromJsonMap(m['id']),
-    node = new NodeAddress.fromJsonMap(m['node']);
-
-  void send(dynamic data, reply){
-  }
-  
-  Future call(dynamic data){
-  }
-
-  /// stream interface
-  void add(dynamic data){
-    send(data,null);
-  }
-}
-
-/**
   * unique ID to distinguish isolates
   */
-class IsolateId {
+class _IsolateId {
   static int nextid = 0;
 
   final int id;
   final NodeAddress node;
   
-
-  IsolateId():
+  _IsolateId():
    id = nextid++,
    node = NodeAddress._localhost;
   
-  IsolateId.fromJsonMap(Map map):
+  _IsolateId.fromJsonMap(Map map):
     id = map['id'],
     node = new NodeAddress.fromJsonMap(map['node']);
 
-  Map toJson(){
+  String toString() => "$node:$id";
+  
+  Map<String,dynamic> toJson(){
    var obj = {
      'id' : id,
      'node' : node
    }; 
    return obj;
   }
-
-  String toString() => "$node:$id";
+  
+  /// identical and '==' overload
+  int get hashCode => node.hashCode + id;
+  bool operator ==(other) {
+    if (identical(this, other)) {
+      return true;
+    } 
+    return (other is _IsolateId && id == other.id && node == other.node);
+  }
 }
+
+/**
+  * Sendport Proxy
+  * Reference to a specific [_LocalIsolate].
+  * To send a [SendPort] to a remote host, it must be wrapped in a
+  * [_LocalIsolate] and sent as a [_RemoteSendPort]
+  */
+class _RemoteSendPort {
+  final _IsolateId id;
+  final NodeAddress node;
+
+  _RemoteSendPort(this.id): 
+    node = NodeAddress._localhost;
+
+  _RemoteSendPort.fromMap(Map m):
+    id = new _IsolateId.fromJsonMap(m['id']),
+    node = new NodeAddress.fromJsonMap(m['node']);
+
+  void send(dynamic data, _RemoteSendPort reply){
+    var request = { 'data' : data,'reply' : reply };
+    new Network(node).send(_NETWORK_ISOLATE_DATA_HANDLER, request);
+  }
+  
+  Future call(dynamic data){
+    var rp = new ReceivePort();
+    var sp = rp.toSendPort();
+    var local = new _LocalIsolate.fromSendPort(sp);
+    send(data,local.toRemoteSendPort());
+    
+    var c = new Completer();
+    rp.receive((msg,_) => c.complete(msg));
+    return c.future;
+  }
+}
+
 
 /**
   * Lookup table, contains reference to all physical isolates spawned on the
   * current Node.
   * 
-  * The table contains a mapping between an [IsolateId] and a [SendPort]
-  * [SendPort]'s can be created manually, and bound to a [LocalIsolate]
-  * object, or it can be created directly in via a [LocalIsolate] constructor.
+  * The table contains a mapping between an [_IsolateId] and a [SendPort]
+  * [SendPort]'s can be created manually, and bound to a [_LocalIsolate]
+  * object, or it can be created directly in via a [_LocalIsolate] constructor.
   */
-class LocalIsolate{
-  final IsolateId id = new IsolateId();
+class _LocalIsolate{
+  final _IsolateId id = new _IsolateId();
   final SendPort sendport;
   
-  /// [LocalIsolate] lookup table, key is (string) IsolateId
-  static Map<String, LocalIsolate> _isolatemap = {};
-  RemoteSendPort toRemoteSendPort() => new RemoteSendPort(id);
+  /// [_LocalIsolate] lookup table, key is (string) IsolateId
+  static Map<_IsolateId, _LocalIsolate> _isolatemap = {};
+  _RemoteSendPort toRemoteSendPort() => new _RemoteSendPort(id);
 
   /** 
-    * Search for [LocalIsolate] instance
+    * Search for [_LocalIsolate] instance
     * returns null if isolate does not exist.
     */
-  static LocalIsolate Lookup(IsolateId id){
+  static _LocalIsolate Lookup(_IsolateId id){
     var key = id.toString();
     if( _isolatemap.containsKey(key))
       return _isolatemap[key];
   }
-
-  /// spawn a new isolate
-  factory LocalIsolate.spawn(String uri){
-    var sp = spawnUri(uri);
-    return new LocalIsolate.fromSendPort(sp); 
-  }
-
-  /// bind a new sendport to the [LocalIsolate] lookup table
-  LocalIsolate.fromSendPort(this.sendport){
-    _isolatemap[id.toString()] = this; 
-  }
-}
-
-/**
-  * Mapping between [IsolateId] and [RemoteSendPort]
-  */
-class RemoteIsolate {
-  /// map: (string) IsolateId -> RemoteSendPort
-  static Map<String,RemoteSendPort> _remoteports = {};
-
-  static RemoteSendPort Lookup(IsolateId id) {
-    if( _remoteports.containsKey(id.toString()))
-        return _remoteports[id.toString()];
-  }
-
-  static Future<IsolateId> Spawn(String uri){
-    Future<_FileNode> dc = _DartCodeDb.resolveDartProgram(uri);
-    return new Future.value(new IsolateId()); // TODO: get from remote 
-  }
-}
-
-
-// PUBLIC API //////////////////////////////////////////////////////////////////////
-/**
-  * Creates and spawns an isolate whose code is available at uri. 
-  * The isolate is spawned on a remote node available in the distributed network.
-  * Returns an IsolateSink feeding into the remote isolate stream
-  */
-IsolateSink streamSpawnUriRemote(String uri){
-
-  // incomming data is buffered in the streamcontroller until the network 
-  // connection is established, which allows us to return a sink immediatly, 
-  // and setup network async
-  var sc = new StreamController();
   
-  // setup stream listener to network object.
-  bindNetwork(IsolateId id){
-    sc.stream
-      //.transform(IsolateDataRequest.transform(id))
-      .listen((d) => RemoteIsolate.Lookup(id).send(d,null));
+  /// bind a new sendport to the [_LocalIsolate] lookup table
+  _LocalIsolate.fromSendPort(this.sendport){
+    _isolatemap[id] = this; 
   }
-
-  // send spawn request, and bind stream to network object when done
-  RemoteIsolate.Spawn(uri).then(bindNetwork);
-  return sc.sink;
 }
 
-/**
-  * Creates and spawns an isolate whose code is available at uri. 
-  * The isolate is spawned on a remote node available in the distributed network.
-  * Returns a sendport which is linked to the remote isolate ReceivePort
-  */
-SendPort spawnUriRemote(String uri){
-  var sink = streamSpawnUriRemote(uri);
+// PUBLIC function
+SendPort spawnUriRemote(String uri, NodeAddress node){
+  var request = {};  
+  new Network(node).send(_NETWORK_SPAWN_ISOLATE_HANDLER, request);
   var rp = new ReceivePort();
-  rp.receive((data,_) => sink.add(data));
-  return port.toSendPort();
+  rp.receive((msg,reply) => print(msg));
+  return rp.toSendPort();
 }
-
