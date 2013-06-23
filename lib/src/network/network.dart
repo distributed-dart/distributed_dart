@@ -55,6 +55,7 @@ class Network {
   _outgoing(Socket socket){
     _sc.stream
     .transform(new JsonEncoder())
+    .transform(new JsonDebugger("outgoing json"))
     .transform(new StringEncoder())
     .transform(new ByteListEncoder())
     .listen(socket.add);
@@ -66,7 +67,19 @@ class Network {
     socket
     .transform(new ByteListDecoder())
     .transform(new StringDecoder())
+    .transform(new JsonDebugger("incomming json"))
     .transform(new JsonDecoder())
     .listen(_RequestHandler.notify);
+  }
+}
+
+class JsonDebugger extends StreamEventTransformer<String, String> {
+  final String name;
+  
+  JsonDebugger(this.name);
+  
+  void handleData(String data, EventSink<String> sink){
+    _log("$name: $data");
+    sink.add(data);
   }
 }
