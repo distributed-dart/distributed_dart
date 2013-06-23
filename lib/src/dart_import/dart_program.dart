@@ -57,12 +57,6 @@ class _DartProgram extends _DependencyNode {
     }
   }
   
-  /// Create [_DartProgram] instance from [String] containing a JSON object 
-  /// (created from [toJson]).
-  factory _DartProgram.fromJson(String jsonString) {
-    return new _DartProgram.fromMap(json.parse(jsonString));
-  }
-  
   /// Create [_DartProgram] from [Map] created by parsing a JSON object.
   factory _DartProgram.fromMap(Map jsonMap) {
     List<_FileNode> dependencies = new List<_FileNode>();
