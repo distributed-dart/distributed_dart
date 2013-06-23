@@ -2,7 +2,7 @@ import 'dart:isolate';
 
 main(){
   port.receive((msg,reply){
-      print("received: $msg");
-      reply.send("OK: $msg");
+      print("hellodistributedworld received: ${msg['msg']}");
+      msg['reply'].send("OK: ${msg['msg']}");
   });
 }

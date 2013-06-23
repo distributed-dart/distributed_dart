@@ -49,9 +49,21 @@ class _IsolateId {
   * To send a [SendPort] to a remote host, it must be wrapped in a
   * [_LocalIsolate] and sent as a [_RemoteSendPort]
   */
+const String _REMOTE_SENDPORT_MAGIC_COOKIE = """
++8aUvJ957Zor2AaFfhAkEQlD468yNq4MNqgp5SmpkUtNJevIOIFEDdgrqOUtQNhQMH4jO8I2f7Pq
+z+nutYI2iC3gMx8CxUQGrinBC+UDwYso6p/bhasaJecbBp2TMrxu48K3CTRJuDXqAGi/BgAZ7+y8
+Dsw/I58To2onq3MYuV8Hf810Le4z8WZhl+6/duvBsU4Q0CMNFGENaQKISrJ/HTceDYDF7lN+iXMk
+Qs9qfTSr0AgIP5vn4og6wT4eubaKggx1fiPXLgFFyUqrEde2m7zxWDeVLM0hAkwcXeIiLnCPT/ZU
+nKdd6Dw/UZlCpQrOzyTh4SDgQEuwxvvrMaLDF30aPhtw+AqKcnzJvy5GjjdKCgo2lWr1+c/1sB2Z
+dkBfw9luYygXgkovqjnR14Vw63vLcV6X3B90zYB+QbU1UFuguKBuYwhrrpaWgtffIEnbXum6rUIa
+t842KsY9bZ0vBHWXqwYA1lu2Jomq9Etv+X0nT+ICEc4Yzufa25VsT4XLYA65E44GhGj6DBdHCNu5
+MOdAQ1TLZc9qL4wA/OL5w0EObAXw9f8l1onoHIsEHrdZPHjWh4S2evuUmcYoPGZCC6vL3WFADI1F
+6E5l8InGJd05lEPkhVBfh/bR+FnvZl+RC39dkUsQboEjn30cDpQbmp0oRJKau9JlMOfQSUYTVv8=
+""";
 class _RemoteSendPort {
   final _IsolateId id;
   final NodeAddress node;
+  final String RSPID = _REMOTE_SENDPORT_MAGIC_COOKIE;
 
   _RemoteSendPort(this.id): 
     node = NodeAddress._localhost;
@@ -87,7 +99,7 @@ class _RemoteSendPort {
     return c.future;
   }
   
-  Map toJson() =>  {'id' : id,'node' : node };
+  Map toJson() =>  {'id' : id,'node' : node , 'RSPID' : RSPID };
 }
 
 /**

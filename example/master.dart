@@ -8,6 +8,9 @@ main(){
   var slave = new NodeAddress("127.0.0.1", 2345);
   var remote = spawnUriRemote("./hellodistributedworld.dart",slave);
   //var local = spawnUri("./hellodistributedworld.dart",slave);
-  port.receive((msg,reply) => print(msg));
-  remote.send("hello remote world",port.toSendPort());
+  port.receive((msg,reply) => print("master received: $msg"));
+
+//remote.send("hello remote world",port.toSendPort());
+  var data = { 'msg': "hello from a map", 'reply' : port.toSendPort() };
+  remote.send(data, null);
 }
