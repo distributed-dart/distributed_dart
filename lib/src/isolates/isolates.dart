@@ -57,20 +57,24 @@ class _RemoteSendPort {
   // map a SendPort;
   SendPort toSendPort(){
     var rp = new ReceivePort();
-    rp.receive((msg,reply) => send(msg,reply));
+    rp.receive((msg,reply){
+      var rsp = new _LocalIsolate(reply).toRemoteSendPort();
+      send(msg, rsp);
+    });
     return rp.toSendPort();
   }
 
-  void send(dynamic msg, SendPort reply){
-    var request = { 'msg' : msg,'reply' : reply, 'id' : id };
-    new Network(node).send(_NETWORK_ISOLATE_DATA_HANDLER, request);
+  void send(dynamic msg, _RemoteSendPort reply){
+    var nosendports = new ObjectScanner().scanAndReplaceObject(msg);
+    var request = { 'msg' : nosendports,'reply' : reply, 'id' : id };
+    new Network(node).send(_NETWORK_ISOLATE_DATA_HANDLER, request); 
   }
   
   Future call(dynamic data){
     var rp = new ReceivePort();
     var sp = rp.toSendPort();
-    var local = new _LocalIsolate.fromSendPort(sp);
-    send(data,local.sendport);
+    var local = new _LocalIsolate(sp);
+    send(data,local.toRemoteSendPort());
     
     var c = new Completer();
     rp.receive((msg,_) => c.complete(msg));
@@ -92,6 +96,9 @@ class _LocalIsolate{
   
   /// [_LocalIsolate] lookup table, key is (string) IsolateId
   static Map<_IsolateId, _LocalIsolate> _isolatemap = {};
+  
+  static Map<SendPort, _LocalIsolate> _sendportmap = {};
+  
   _RemoteSendPort toRemoteSendPort() => new _RemoteSendPort(id);
 
   /** 
@@ -104,9 +111,17 @@ class _LocalIsolate{
       return _isolatemap[key];
   }
   
+  _LocalIsolate._create(this.sendport){
+    _isolatemap[id] = this;
+    _sendportmap[sendport] = this;
+  }
+  
   /// bind a new sendport to the [_LocalIsolate] lookup table
-  _LocalIsolate.fromSendPort(this.sendport){
-    _isolatemap[id] = this; 
+  factory _LocalIsolate(SendPort port){
+    if(_sendportmap.containsKey(port)){
+      return _sendportmap[port];
+    }
+    return new _LocalIsolate._create(port);
   }
 }
 

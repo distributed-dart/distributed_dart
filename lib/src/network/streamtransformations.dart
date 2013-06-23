@@ -83,7 +83,7 @@ class NotSerializableObjectException implements Exception {
 }
 
 // Gift from Jacob. Should definitely just made ​​a little about fit into the rest
-class IsolateCommunication {
+class ObjectScanner {
   List<Object> seen = new List<Object>();
   
   void checkCycle(final object) {
@@ -128,7 +128,7 @@ class IsolateCommunication {
       seen.remove(object);
       return object;
     } else if (object is SendPort) {
-      return new _LocalIsolate.fromSendPort(object).toRemoteSendPort();
+      return new _LocalIsolate(object).toRemoteSendPort();
     } else {
       checkCycle(object);
       var r = scanAndReplaceObject(object.toJson());

@@ -10,7 +10,7 @@ _spawnIsolateHandler(dynamic request, NodeAddress sender) {
   // callback, start isolate and send [_RemoteSendPort] to [senderAddress]
   spawn(String uri){
     var sendport = spawnUri(uri);
-    var local = new _LocalIsolate.fromSendPort(sendport);
+    var local = new _LocalIsolate(sendport);
     var remote = local.toRemoteSendPort();
     var response = new _spawnIsolateResponse(req.id, remote);
     response.sendTo(sender);
