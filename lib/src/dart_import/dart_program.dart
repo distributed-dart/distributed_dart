@@ -213,6 +213,10 @@ class _DartProgram extends _DependencyNode {
     });
     
     return c.future.then((String path) {
+      if (new Path(path).isAbsolute) {
+        return path;
+      }
+      
       // Append current working directory for the running Dart process
       Path processDir = new Path(Directory.current.path);
       String fullPath = processDir.append(path).toNativePath();
