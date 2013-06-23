@@ -192,7 +192,7 @@ class _DartProgram extends _DependencyNode {
                   // Add file to list of files to download
                   _log("Add missing file to download list: ${node.name}");
                   missing.add(new _RequestBundle(node.fileHashString,
-                                                       hashFilePath, filePath));
+                                                 hashFilePath, filePath));
                   return;
                 } else {
                   // Create link between hash file and the environment.
@@ -203,8 +203,10 @@ class _DartProgram extends _DependencyNode {
             })).then((_) {
               if (missing.length > 0) {
                 _log("Download missing files from network:");
-                _DartCodeDb.downloadAndPrepareFiles(missing,sender).then((_) {
-                  c.complete(spawnFile.path);
+                _DartCodeDb.downloadHashFiles(missing,sender).then((_) {
+                  Future.wait(missing.map((_RequestBundle request) {
+                    return request.createLink();
+                  })).then((_) => c.complete(c.complete(spawnFile.path)));
                 });
               } else {
                 // Get the full path and return it
