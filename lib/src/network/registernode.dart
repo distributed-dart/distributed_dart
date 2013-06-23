@@ -9,7 +9,7 @@ Path _workDirPath;
 
 void registerNode(NodeAddress node, [bool allowremote=false, String workdir]) {
   //kregisterNode must not be called more than once
-  if( ! NodeAddress._localhost == null){
+  if(NodeAddress._localhost != null) {
     throw new UnsupportedOperationError("Can only register node once");
   }
 
