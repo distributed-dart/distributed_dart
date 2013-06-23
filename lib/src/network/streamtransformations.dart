@@ -99,7 +99,13 @@ class ObjectScanner {
     seen.add(object);
   }
 
-  Object scanAndReplaceObject(final object) {
+  Object replaceSendPort(final object) 
+    => scanAndReplaceObject(object, true);
+  
+  Object replaceRemoteSendPort(final object) 
+    => scanAndReplaceObject(object, false);
+  
+  Object scanAndReplaceObject(final object, bool replaceSendPort) {
     if (object is num) {
       return object;
     } else if (object is bool) {
@@ -113,7 +119,7 @@ class ObjectScanner {
       List a = object;
       if (a.length > 0) {
         a = a.map((Object o) {
-          return scanAndReplaceObject(o);
+          return scanAndReplaceObject(o, replaceSendPort);
         }).toList(growable:false);
       }
       seen.remove(object);
@@ -124,18 +130,20 @@ class ObjectScanner {
       
       m.keys.forEach((String key) {
         if (key is String) {
-          m[key] = scanAndReplaceObject(m[key]);
+          m[key] = scanAndReplaceObject(m[key], replaceSendPort);
         } else {
           throw new NotSerializableObjectException("Key must be string.");
         }
       });
       seen.remove(object);
       return object;
-    } else if (object is SendPort) {
+    } else if (object is SendPort && replaceSendPort) {
       return new _LocalIsolate(object).toRemoteSendPort();
+    } else if (object is _RemoteSendPort && !replaceSendPort) {
+      return object.toSendPort();
     } else {
       checkCycle(object);
-      var r = scanAndReplaceObject(object.toJson());
+      var r = scanAndReplaceObject(object.toJson(), replaceSendPort);
       seen.remove(object);
       return r;
     }
