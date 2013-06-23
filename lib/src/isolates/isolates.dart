@@ -19,7 +19,7 @@ class _IsolateId {
 
   String toString() => "$node:$id";
   
-  Map<String,dynamic> toJson(){
+  Map toJson(){
    var obj = {
      'id' : id,
      'node' : node
@@ -50,7 +50,7 @@ class _RemoteSendPort {
   _RemoteSendPort(this.id): 
     node = NodeAddress._localhost;
 
-  _RemoteSendPort.fromMap(Map m):
+  _RemoteSendPort.fromJsonMap(Map m):
     id = new _IsolateId.fromJsonMap(m['id']),
     node = new NodeAddress.fromJsonMap(m['node']);
   
@@ -80,6 +80,8 @@ class _RemoteSendPort {
     rp.receive((msg,_) => c.complete(msg));
     return c.future;
   }
+  
+  Map toJson() =>  {'id' : id,'node' : node };
 }
 
 /**
@@ -95,9 +97,8 @@ class _LocalIsolate{
   final SendPort sendport;
   
   /// [_LocalIsolate] lookup table, key is (string) IsolateId
-  static Map<_IsolateId, _LocalIsolate> _isolatemap = {};
-  
-  static Map<SendPort, _LocalIsolate> _sendportmap = {};
+  static Map<_IsolateId, _LocalIsolate> _isolatemap = new Map();
+  static Map<SendPort, _LocalIsolate> _sendportmap = new Map();
   
   _RemoteSendPort toRemoteSendPort() => new _RemoteSendPort(id);
 
@@ -106,7 +107,7 @@ class _LocalIsolate{
     * returns null if isolate does not exist.
     */
   static _LocalIsolate Lookup(_IsolateId id){
-    var key = id.toString();
+    var key = id;
     if( _isolatemap.containsKey(key))
       return _isolatemap[key];
   }
@@ -127,14 +128,14 @@ class _LocalIsolate{
 
 class _RemoteProxy {
   /// requestid mapped to functions that completes a future
-  static Map<_IsolateId, Function> subscribers = {};
+  static Map subscribers = new Map();
   
   /// returns a future, which is completed when the node is notified by
   /// a requesthandler
   static Future<_RemoteSendPort> subscribe(_IsolateId requestid){
     var c = new Completer();
-    subscribers[requestid] = (_RemoteSendPort port){
-      c.complete(port);
+    subscribers[requestid] = (_RemoteSendPort rsp){
+      c.complete(rsp);
       subscribers.remove(requestid);
     };
     return c.future;
@@ -157,8 +158,9 @@ SendPort spawnUriRemote(String uri, NodeAddress node){
     .then((_RemoteSendPort rsp){
       buffer.stream.listen((data){
         var msg = data['msg'];
-        var reply = data['reply'];
-        rsp.send(data, reply);
+        var sp = data['reply'];
+        var local = new _LocalIsolate(sp);
+        rsp.send(msg, local.toRemoteSendPort());
       });
     });
   

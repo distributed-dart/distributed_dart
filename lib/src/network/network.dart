@@ -3,7 +3,7 @@ part of distributed_dart;
 class Network {
   
   /// only one connection for each remote host, shared by all
-  static Map<NodeAddress, Network> _connections = {};
+  static Map<NodeAddress, Network> _connections = new Map();
 
   /*
    *  acts as a buffer for incomming data

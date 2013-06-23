@@ -19,16 +19,7 @@ _spawnIsolateHandler(dynamic request, NodeAddress sender) {
   req.code.createSpawnUriEnvironment(new Network(sender)).then(spawn);
 }
 
-/**
- * Handler, receives a [_RemoteSendPort] as response to a spawnRemoteUri call
- */
-const String _NETWORK_SPAWN_RESPONSE_HANDLER = "spawn_isolate";
-_spawnIsolateResponseHandler(dynamic request, NodeAddress sender){
-  var req = new _spawnIsolateRequest.fromJsonMap(request);
-  _RemoteProxy.notify(req.id, req.sendport);
-}
-
-
+///[_spawnIsolateHandler] data type
 class _spawnIsolateRequest {
   final _IsolateId id;
   final _DartProgram code;
@@ -45,19 +36,3 @@ class _spawnIsolateRequest {
   Map<String,dynamic> toJson() => { 'id' : id, 'code' : code };
 }
 
-class _spawnIsolateResponse {
-  final _IsolateId id;
-  final _RemoteSendPort sendport;
-
-  _spawnIsolateResponse(this.id,this.sendport);
-  
-  _spawnIsolateResponse.fromJsonMap(Map m):
-    id = new _IsolateId.fromJsonMap(m['id']),
-    sendport = new _RemoteSendPort.fromMap(m['sendport']);
-  
-  sendTo(NodeAddress node){
-    new Network(node).send(_NETWORK_SPAWN_RESPONSE_HANDLER, this);
-  }
-  
-  Map<String,dynamic> toJson() => { 'id' : id, 'sendport' : sendport };
-}

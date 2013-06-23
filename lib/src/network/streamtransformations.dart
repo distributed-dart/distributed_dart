@@ -3,7 +3,7 @@ part of distributed_dart;
 // Prefixes a the bytelist object with the size of the json string
 // size prefixe is a 64 bit integer, encoded as Uint8List(8)
 class ByteListEncoder extends StreamEventTransformer {
-    void handleData (Uint8List data, EventSink sink) {
+    void handleData (List data, EventSink sink) {
       var size = new Uint8List(8);
       new ByteData.view(size.buffer).setUint64(0,data.length);
       _log("add header: ${data.length} -> $size");
@@ -60,7 +60,12 @@ class ByteListDecoder extends StreamEventTransformer {
 
 class JsonEncoder extends StreamEventTransformer <dynamic,String> {
   void handleData(dynamic data, EventSink<String> sink){
-    sink.add(json.stringify(data));
+    try {
+      sink.add(json.stringify(data));
+    } catch (e){
+      print(data.runtimeType);
+      print(data);
+    }
   }
 }
 

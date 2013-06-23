@@ -42,6 +42,10 @@ class _RequestHandler {
       case _NETWORK_SPAWN_ISOLATE_HANDLER:
         _spawnIsolateHandler(data, sender);
         break;
+        
+      case _NETWORK_SPAWN_RESPONSE_HANDLER:
+        _spawnIsolateResponseHandler(data, sender);
+        break;
     }
   }
   

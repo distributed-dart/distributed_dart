@@ -41,3 +41,4 @@ part 'src/network/handler/filehandler.dart';
 part 'src/network/handler/filerequesthandler.dart';
 part 'src/network/handler/isolatedatahandler.dart';
 part 'src/network/handler/spawnisolatehandler.dart';
+part 'src/network/handler/spawnisolateresponsehandler.dart';

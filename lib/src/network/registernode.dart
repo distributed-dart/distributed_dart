@@ -26,6 +26,7 @@ void registerNode(NodeAddress node, [bool allowremote=false, String workdir]) {
   
   if(allowremote){
     _RequestHandler.allow(_NETWORK_SPAWN_ISOLATE_HANDLER);
+    _RequestHandler.allow(_NETWORK_SPAWN_RESPONSE_HANDLER);
   }
   
   // start listening for incomming requests
