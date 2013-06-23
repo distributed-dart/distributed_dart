@@ -34,9 +34,10 @@ class _spawnIsolateRequest {
   final _DartProgram code;
   
   _spawnIsolateRequest(this.id,this.code);
+  
   _spawnIsolateRequest.fromJsonMap(Map m):
-    id = m['id'],
-    code = m['code'];  
+    id = new _IsolateId.fromJsonMap(m['id']),
+    code = new _DartProgram.fromMap(m['code']);  
 
   sendTo(NodeAddress node){
     new Network(node).send(_NETWORK_SPAWN_ISOLATE_HANDLER, this);
@@ -49,9 +50,10 @@ class _spawnIsolateResponse {
   final _RemoteSendPort sendport;
 
   _spawnIsolateResponse(this.id,this.sendport);
+  
   _spawnIsolateResponse.fromJsonMap(Map m):
-    id = m['id'],
-    sendport = m['sendport'];
+    id = new _IsolateId.fromJsonMap(m['id']),
+    sendport = new _RemoteSendPort.fromMap(m['sendport']);
   
   sendTo(NodeAddress node){
     new Network(node).send(_NETWORK_SPAWN_RESPONSE_HANDLER, this);

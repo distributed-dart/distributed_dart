@@ -53,9 +53,16 @@ class _RemoteSendPort {
   _RemoteSendPort.fromMap(Map m):
     id = new _IsolateId.fromJsonMap(m['id']),
     node = new NodeAddress.fromJsonMap(m['node']);
+  
+  // map a SendPort;
+  SendPort toSendPort(){
+    var rp = new ReceivePort();
+    rp.receive((msg,reply) => send(msg,reply));
+    return rp.toSendPort();
+  }
 
-  void send(dynamic data, _RemoteSendPort reply){
-    var request = { 'data' : data,'reply' : reply };
+  void send(dynamic msg, SendPort reply){
+    var request = { 'msg' : msg,'reply' : reply, 'id' : id };
     new Network(node).send(_NETWORK_ISOLATE_DATA_HANDLER, request);
   }
   
@@ -63,7 +70,7 @@ class _RemoteSendPort {
     var rp = new ReceivePort();
     var sp = rp.toSendPort();
     var local = new _LocalIsolate.fromSendPort(sp);
-    send(data,local.toRemoteSendPort());
+    send(data,local.sendport);
     
     var c = new Completer();
     rp.receive((msg,_) => c.complete(msg));
@@ -104,7 +111,6 @@ class _LocalIsolate{
 }
 
 class _RemoteProxy {
-
   /// requestid mapped to functions that completes a future
   static Map<_IsolateId, Function> subscribers = {};
   
