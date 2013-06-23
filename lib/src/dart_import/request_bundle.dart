@@ -3,13 +3,13 @@ part of distributed_dart;
 /**
  * Is only used to easier to collect a list of files there are needed to be 
  * downloaded from another computer. The file to be downloaded is represented 
- * by the [hash] value and when the file is downloaded it should be saved as 
+ * by the [fileHash] value and when the file is downloaded it should be saved as 
  * [hashFilePath]. At last there should be created a link between [hashFilePath] 
  * and [filePath].
  */
 class _RequestBundle {
   /// Hash value to request.
-  final String hash;
+  final String fileHash;
   
   /// Path the downloaded file should be saved.
   final Path hashFilePath;
@@ -18,7 +18,7 @@ class _RequestBundle {
   final Path filePath;
   
   /// Create a [_RequestBundle] object.
-  _RequestBundle(this.hash, this.hashFilePath, this.filePath);
+  _RequestBundle(this.fileHash, this.hashFilePath, this.filePath);
   
   /// Create link a link saved as [filePath] and links to [hashFilePath].
   Future createLink() {
@@ -46,7 +46,7 @@ class _RequestBundle {
     }
     
     if (other is _RequestBundle && 
-        hash == other.hash && 
+        fileHash == other.fileHash && 
         hashFilePath == other.hashFilePath &&
         filePath == filePath) {
       
