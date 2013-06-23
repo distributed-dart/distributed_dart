@@ -106,7 +106,7 @@ class _LocalIsolate{
 
 // PUBLIC function
 SendPort spawnUriRemote(String uri, NodeAddress node){
-  var request = {};  
+  var request = _DartCodeDb.resolveDartProgram(uri);  
   new Network(node).send(_NETWORK_SPAWN_ISOLATE_HANDLER, request);
   var rp = new ReceivePort();
   rp.receive((msg,reply) => print(msg));
