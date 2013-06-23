@@ -63,8 +63,7 @@ class JsonEncoder extends StreamEventTransformer <dynamic,String> {
     try {
       sink.add(json.stringify(data));
     } catch (e){
-      print(data.runtimeType);
-      print(data);
+      _err(e);
     }
   }
 }

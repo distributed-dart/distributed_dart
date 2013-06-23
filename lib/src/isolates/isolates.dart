@@ -8,21 +8,27 @@ class _IsolateId {
 
   final int id;
   final NodeAddress node;
+  final int ts;
   
   _IsolateId():
    id = nextid++,
-   node = NodeAddress._localhost;
+   node = NodeAddress._localhost,
+   ts = new DateTime.now().millisecondsSinceEpoch;
+   
   
   _IsolateId.fromJsonMap(Map map):
     id = map['id'],
-    node = new NodeAddress.fromJsonMap(map['node']);
+    node = new NodeAddress.fromJsonMap(map['node']),
+    ts = map['ts'];
+    
 
-  String toString() => "$node:$id";
+  String toString() => "$node:$id:$ts";
   
   Map toJson(){
    var obj = {
      'id' : id,
-     'node' : node
+     'node' : node,
+     'ts' : ts
    }; 
    return obj;
   }
