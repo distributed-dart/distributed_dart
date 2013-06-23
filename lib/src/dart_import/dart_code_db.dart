@@ -37,6 +37,9 @@ class _DartCodeDb {
    */
   static Map<String,Path> _hashToPathCache = new Map();
   
+  // Liste over filer der er blevet forespurgt om og som afventer fuldførsel
+  static Map<String,DownloadRequest> _downloadQueue = new Map();
+  
   /**
    * **NOTE: This method is not implemented correctly right now!**
    * 
@@ -51,26 +54,44 @@ class _DartCodeDb {
    * [_RequestBundle] objects. The returned [Future] is finished when all steps 
    * in the process is finished.
    */
-  static Future downloadAndPrepareFiles(List<_RequestBundle> requests,
+  static Future downloadHashFiles(List<_RequestBundle> requests,
                                         Network sender) {
     if (logging) {
       _log("Running downloadFilesAndCreateLinks(");
       requests.forEach((_RequestBundle r) {
-        _log("     ${r.hash}:");
+        _log("     ${r.fileHash}:");
         _log("        hashFilePath: ${r.hashFilePath}");
         _log("        filePath:     ${r.filePath}");
       });
+      _log("     , $sender)");
     }
     
-    return Future.wait(requests.map((_RequestBundle r) {
-      return getSourceFromHash(r.hash).then((List<int> fileContent) {
-        File newFile = new File.fromPath(r.hashFilePath);
+    // Create list of hash for files we need to request for. Don't create
+    // requests for files we already waiting for.
+    List<Future> waitingList = new List();
+    List<String> downloadList = new List();
+    
+    requests.forEach((_RequestBundle bundle) {
+      DownloadRequest request = _downloadQueue[bundle.fileHash];
+      
+      if (request == null) {
+        request = new DownloadRequest(bundle.hashFilePath);
         
-        return newFile.writeAsBytes(fileContent).then((_) {
-          return r.createLink();
-        });
-      });
-    }));
+        // After file is downloaded we remove it from _downloadQueue 
+        request.future = request.future.then((_) 
+            => _downloadQueue.remove(bundle.fileHash));
+        
+        _downloadQueue[bundle.fileHash] = request;
+        downloadList.add(bundle.fileHash);
+      }
+      
+      waitingList.add(request.future);
+    });
+    
+    // Send list of hashes as web request to sender.
+    sender.send(_NETWORK_FILE_REQUEST_HANDLER, downloadList);
+    
+    return Future.wait(waitingList);;
   }
   
   /**
@@ -108,8 +129,8 @@ class _DartCodeDb {
    * on the filesystem while the program has been running.
    */
   static Future<_FileNode> _resolve(String uri, 
-                                  Path packageDir, 
-                                  {bool useCache: true} ) {
+                                    Path packageDir, 
+                                    {bool useCache: true} ) {
     
     _log("Running DartCodeDb.resolve($uri, $useCache)");
     File sourceFile = new File(uri);

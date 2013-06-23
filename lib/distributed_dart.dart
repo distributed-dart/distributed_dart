@@ -22,6 +22,7 @@ part 'src/dart_import/tree/file_node.dart';
 part 'src/dart_import/tree/dependency_node.dart';
 part 'src/dart_import/dart_program.dart';
 part 'src/dart_import/dart_code_db.dart';
+part 'src/dart_import/download_request.dart';
 part 'src/dart_import/request_bundle.dart';
 part 'src/dart_import/scanner.dart';
 

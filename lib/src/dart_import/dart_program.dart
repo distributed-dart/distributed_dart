@@ -57,12 +57,6 @@ class _DartProgram extends _DependencyNode {
     }
   }
   
-  /// Create [_DartProgram] instance from [String] containing a JSON object 
-  /// (created from [toJson]).
-  factory _DartProgram.fromJson(String jsonString) {
-    return new _DartProgram.fromMap(json.parse(jsonString));
-  }
-  
   /// Create [_DartProgram] from [Map] created by parsing a JSON object.
   factory _DartProgram.fromMap(Map jsonMap) {
     List<_FileNode> dependencies = new List<_FileNode>();
@@ -192,7 +186,7 @@ class _DartProgram extends _DependencyNode {
                   // Add file to list of files to download
                   _log("Add missing file to download list: ${node.name}");
                   missing.add(new _RequestBundle(node.fileHashString,
-                                                       hashFilePath, filePath));
+                                                 hashFilePath, filePath));
                   return;
                 } else {
                   // Create link between hash file and the environment.
@@ -203,8 +197,10 @@ class _DartProgram extends _DependencyNode {
             })).then((_) {
               if (missing.length > 0) {
                 _log("Download missing files from network:");
-                _DartCodeDb.downloadAndPrepareFiles(missing,sender).then((_) {
-                  c.complete(spawnFile.path);
+                _DartCodeDb.downloadHashFiles(missing,sender).then((_) {
+                  Future.wait(missing.map((_RequestBundle request) {
+                    return request.createLink();
+                  })).then((_) => c.complete(c.complete(spawnFile.path)));
                 });
               } else {
                 // Get the full path and return it
