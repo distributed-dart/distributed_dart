@@ -1,4 +1,5 @@
 import 'dart:isolate';
+import "package:distributed_dart/distributed_dart.dart";
 
 main(){
   port.receive((msg,reply){
