@@ -29,3 +29,10 @@ class ScannerException implements Exception {
   const ScannerException([this.message = ""]);
   String toString() => "ScannerException: $message";
 }
+
+class NotSerializableObjectException implements Exception {
+  final String message;
+  const NotSerializableObjectException([this.message = ""]);
+  String toString() => "NotSerializableObjectException: $message";
+}
+

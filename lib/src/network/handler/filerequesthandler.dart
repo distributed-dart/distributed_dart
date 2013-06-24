@@ -11,7 +11,7 @@ _fileRequestHandler (dynamic request, NodeAddress senderAddress) {
         requestedFiles[hash] = fileContent;
       });
     })).then((_) {
-      new Network(senderAddress).send(_NETWORK_FILE_HANDLER, requestedFiles);
+      new _Network(senderAddress).send(_NETWORK_FILE_HANDLER, requestedFiles);
     });
   } else {
     String s = "Not supported input object for _fileRequestHandler.";

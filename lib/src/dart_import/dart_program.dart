@@ -125,7 +125,7 @@ class _DartProgram extends _DependencyNode {
    * directory where also a cache will be created for previously dowloaded
    * files.
    */
-  Future<String> createSpawnUriEnvironment(Network sender) {
+  Future<String> createSpawnUriEnvironment(_Network sender) {
     _log("Running createSpawnUriEnvironment()");
     Completer c = new Completer();
     

@@ -83,9 +83,9 @@ class _RemoteSendPort {
   }
 
   void send(dynamic msg, _RemoteSendPort reply){
-    var rspmsg = new ObjectScanner().replaceSendPort(msg);
+    var rspmsg = new _ObjectScanner().replaceSendPort(msg);
     var request = { 'msg' : rspmsg,'reply' : reply, 'id' : id };
-    new Network(node).send(_NETWORK_ISOLATE_DATA_HANDLER, request); 
+    new _Network(node).send(_NETWORK_ISOLATE_DATA_HANDLER, request); 
   }
   
   Future call(dynamic data){

@@ -16,7 +16,7 @@ _spawnIsolateHandler(dynamic request, NodeAddress sender) {
     response.sendTo(sender);
   }
   // setup local environment and spawn isolate
-  req.code.createSpawnUriEnvironment(new Network(sender)).then(spawn);
+  req.code.createSpawnUriEnvironment(new _Network(sender)).then(spawn);
 }
 
 ///[_spawnIsolateHandler] data type
@@ -31,7 +31,7 @@ class _spawnIsolateRequest {
     code = new _DartProgram.fromMap(m['code']);  
 
   sendTo(NodeAddress node){
-    new Network(node).send(_NETWORK_SPAWN_ISOLATE_HANDLER, this);
+    new _Network(node).send(_NETWORK_SPAWN_ISOLATE_HANDLER, this);
   }
   Map<String,dynamic> toJson() => { 'id' : id, 'code' : code };
 }

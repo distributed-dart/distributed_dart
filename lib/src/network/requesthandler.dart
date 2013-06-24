@@ -1,10 +1,5 @@
 part of distributed_dart;
 
-typedef RequestHandler(dynamic request, NodeAddress senderAddress);
-
-/**
-  * Contains list of [RequestHandler]'s.
-  */
 class _RequestHandler {
   static const String REQUEST_TYPE = "type";
   static const String NODE_ADDRESS = "address";

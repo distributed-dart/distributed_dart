@@ -2,7 +2,7 @@ part of distributed_dart;
 
 // Prefixes a the bytelist object with the size of the json string
 // size prefixe is a 64 bit integer, encoded as Uint8List(8)
-class ByteListEncoder extends StreamEventTransformer {
+class _ByteListEncoder extends StreamEventTransformer {
     void handleData (List data, EventSink sink) {
       var size = new Uint8List(8);
       new ByteData.view(size.buffer).setUint64(0,data.length);
@@ -13,7 +13,7 @@ class ByteListEncoder extends StreamEventTransformer {
 }
 
 // split concatinated objects, or assemble larger objects which has been split 
-class ByteListDecoder extends StreamEventTransformer {
+class _ByteListDecoder extends StreamEventTransformer {
   int remaining = -1;
   List<int> obj = [];
 
@@ -58,7 +58,7 @@ class ByteListDecoder extends StreamEventTransformer {
   }
 }
 
-class JsonEncoder extends StreamEventTransformer <dynamic,String> {
+class _JsonEncoder extends StreamEventTransformer <dynamic,String> {
   void handleData(dynamic data, EventSink<String> sink){
     try {
       sink.add(json.stringify(data));
@@ -68,30 +68,17 @@ class JsonEncoder extends StreamEventTransformer <dynamic,String> {
   }
 }
 
-class JsonDecoder extends StreamEventTransformer<String, dynamic> {
+class _JsonDecoder extends StreamEventTransformer<String, dynamic> {
   void handleData(String data, EventSink<dynamic> sink){
     sink.add(json.parse(data));
   }
 }
 
-class JsonCyclicError implements Exception {
-  final String message;
-  const JsonCyclicError([this.message = ""]);
-  String toString() => "Cyclic error!: $message";
-}
-
-class NotSerializableObjectException implements Exception {
-  final String message;
-  const NotSerializableObjectException([this.message = ""]);
-  String toString() => "NotSerializableObjectException: $message";
-}
-
-// Gift from Jacob. Should definitely just made ​​a little about fit into the rest
 /**
  * Scans objects, for SendPort and _RemoteSendPorts, and rewrites them
  * Used to support embedding SendPorts inside the payload of a message.
  */
-class ObjectScanner {
+class _ObjectScanner {
   final int _SENDPORT = 1;
   final int _REMOTESENDPORT = 2;
   

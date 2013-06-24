@@ -1,9 +1,9 @@
 part of distributed_dart;
 
-class Network {
+class _Network {
   
   /// only one connection for each remote host, shared by all
-  static Map<NodeAddress, Network> _connections = new Map();
+  static Map<NodeAddress, _Network> _connections = new Map();
 
   /*
    *  acts as a buffer for incomming data
@@ -20,7 +20,7 @@ class Network {
   }
 
   /// Connect to remote host
-  Network._connect(this._node) {
+  _Network._connect(this._node) {
     Socket.connect(_node.host,_node.port)
       .then((socket){
         _log("connected to ${_node}");
@@ -31,9 +31,9 @@ class Network {
   }
   
   /// return a shared network object for each unique 
-  factory Network(NodeAddress node){
+  factory _Network(NodeAddress node){
     if(! _connections.containsKey(node)){
-      var network = new Network._connect(node);
+      var network = new _Network._connect(node);
       _connections[node] = network;
     }
     return _connections[node];
@@ -54,11 +54,11 @@ class Network {
   /// outging data is encoded, and sent via the shared socket
   _outgoing(Socket socket){
     _sc.stream
-    .transform(new JsonEncoder())
-    .transform(new JsonDebugger("outgoing json"))
+    .transform(new _JsonEncoder())
+    .transform(new _JsonLogger("outgoing json"))
     .transform(new StringEncoder())
-    .transform(new Compress())
-    .transform(new ByteListEncoder())
+    .transform(new _Compress())
+    .transform(new _ByteListEncoder())
     .listen(socket.add);
   }
 
@@ -66,19 +66,19 @@ class Network {
   static _incomming(Socket socket){
     _log("new incomming connection");
     socket
-    .transform(new ByteListDecoder())
-    .transform(new Extract())
+    .transform(new _ByteListDecoder())
+    .transform(new _Extract())
     .transform(new StringDecoder())
-    .transform(new JsonDebugger("incomming json"))
-    .transform(new JsonDecoder())
+    .transform(new _JsonLogger("incomming json"))
+    .transform(new _JsonDecoder())
     .listen(_RequestHandler.notify);
   }
 }
 
-class JsonDebugger extends StreamEventTransformer<String, String> {
+class _JsonLogger extends StreamEventTransformer<String, String> {
   final String name;
   
-  JsonDebugger(this.name);
+  _JsonLogger(this.name);
   
   void handleData(String data, EventSink<String> sink){
     _log("$name: $data");
@@ -86,7 +86,7 @@ class JsonDebugger extends StreamEventTransformer<String, String> {
   }
 }
 
-class Compress extends StreamEventTransformer<List<int>, List<int>> {
+class _Compress extends StreamEventTransformer<List<int>, List<int>> {
   void handleData(List<int> data, EventSink<List<int>> sink) {
     List<int> _temp = new List();
     Stream<List<int>> stream = new Stream.fromFuture(new Future.value(data));
@@ -99,7 +99,7 @@ class Compress extends StreamEventTransformer<List<int>, List<int>> {
   }
 }
 
-class Extract extends StreamEventTransformer<List<int>, List<int>> {
+class _Extract extends StreamEventTransformer<List<int>, List<int>> {
   void handleData(List<int> data, EventSink<List<int>> sink) {
     List<int> _temp = new List();
     Stream<List<int>> stream = new Stream.fromFuture(new Future.value(data));

@@ -13,3 +13,9 @@ class UnsupportedOperationError implements Error {
     return "Not supported operation";
   }
 }
+
+class JsonCyclicError implements Error {
+  final String message;
+  const JsonCyclicError([this.message = ""]);
+  String toString() => "Cyclic error!: $message";
+}

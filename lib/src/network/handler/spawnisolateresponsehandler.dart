@@ -22,7 +22,7 @@ class _spawnIsolateResponse {
     rsp = new _RemoteSendPort.fromJsonMap(m['rsp']);
   
   sendTo(NodeAddress node){
-    new Network(node).send(_NETWORK_SPAWN_RESPONSE_HANDLER, this);
+    new _Network(node).send(_NETWORK_SPAWN_RESPONSE_HANDLER, this);
   }
   
   Map<String,dynamic> toJson() => { 'id' : id, 'rsp' : rsp };

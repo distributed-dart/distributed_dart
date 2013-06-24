@@ -38,7 +38,7 @@ class _DartCodeDb {
   static Map<String,Path> _hashToPathCache = new Map();
   
   // Liste over filer der er blevet forespurgt om og som afventer fuldførsel
-  static Map<String,DownloadRequest> _downloadQueue = new Map();
+  static Map<String,_DownloadRequest> _downloadQueue = new Map();
   
   /**
    * Check file requests and create network requests for files we not already
@@ -49,7 +49,7 @@ class _DartCodeDb {
    * Links should be created for files after the future is completed.
    */
   static Future downloadAndLinkFiles(List<_RequestBundle> requests,
-                                     Network sender) {
+                                    _Network sender) {
     if (logging) {
       _log("Running downloadFilesAndCreateLinks(");
       requests.forEach((_RequestBundle r) {
@@ -66,10 +66,10 @@ class _DartCodeDb {
     List<String> downloadList = new List();
     
     requests.forEach((_RequestBundle bundle) {
-      DownloadRequest request = _downloadQueue[bundle.fileHash];
+      _DownloadRequest request = _downloadQueue[bundle.fileHash];
       
       if (request == null) {
-        request = new DownloadRequest(bundle.hashFilePath);
+        request = new _DownloadRequest(bundle.hashFilePath);
         
         // After file is downloaded we remove it from _downloadQueue 
         request.future = request.future.then((_) 
