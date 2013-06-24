@@ -41,21 +41,15 @@ class _DartCodeDb {
   static Map<String,DownloadRequest> _downloadQueue = new Map();
   
   /**
-   * **NOTE: This method is not implemented correctly right now!**
+   * Check file requests and create network requests for files we not already
+   * have requested. The returned [Future] is completed when all requested files 
+   * is saved on disk.
    * 
-   * Instead of getting the content from the disk it should take a network 
-   * object and use it to send a request for the file content (and save it 
-   * locally after). The reason for current foolish implementation is to test 
-   * if things work without the network implementation finished.
-   * 
-   * Download file requests by create a network request, send it to the network 
-   * and wait for the answer. When all the files is downloaded it is saved to 
-   * the disk locally and linked to the right directories as described in the 
-   * [_RequestBundle] objects. The returned [Future] is finished when all steps 
-   * in the process is finished.
+   * *REMEMBER:* Files are saved in the hashes folder and links is not created.
+   * Links should be created for files after the future is completed.
    */
-  static Future downloadHashFiles(List<_RequestBundle> requests,
-                                        Network sender) {
+  static Future downloadAndLinkFiles(List<_RequestBundle> requests,
+                                     Network sender) {
     if (logging) {
       _log("Running downloadFilesAndCreateLinks(");
       requests.forEach((_RequestBundle r) {
@@ -85,13 +79,14 @@ class _DartCodeDb {
         downloadList.add(bundle.fileHash);
       }
       
-      waitingList.add(request.future);
+      // When file is downloaded we create the link to the isolate dir.
+      waitingList.add(request.future.then((_) => bundle.createLink()));
     });
     
     // Send list of hashes as web request to sender.
     sender.send(_NETWORK_FILE_REQUEST_HANDLER, downloadList);
     
-    return Future.wait(waitingList);;
+    return Future.wait(waitingList);
   }
   
   /**
