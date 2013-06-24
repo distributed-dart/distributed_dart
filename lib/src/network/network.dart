@@ -57,6 +57,7 @@ class Network {
     .transform(new JsonEncoder())
     .transform(new JsonDebugger("outgoing json"))
     .transform(new StringEncoder())
+    .transform(new Compress())
     .transform(new ByteListEncoder())
     .listen(socket.add);
   }
@@ -66,6 +67,7 @@ class Network {
     _log("new incomming connection");
     socket
     .transform(new ByteListDecoder())
+    .transform(new Extract())
     .transform(new StringDecoder())
     .transform(new JsonDebugger("incomming json"))
     .transform(new JsonDecoder())
@@ -81,5 +83,31 @@ class JsonDebugger extends StreamEventTransformer<String, String> {
   void handleData(String data, EventSink<String> sink){
     _log("$name: $data");
     sink.add(data);
+  }
+}
+
+class Compress extends StreamEventTransformer<List<int>, List<int>> {
+  void handleData(List<int> data, EventSink<List<int>> sink) {
+    List<int> _temp = new List();
+    Stream<List<int>> stream = new Stream.fromFuture(new Future.value(data));
+    stream.transform(new ZLibDeflater()).listen((List<int> compressedData) {
+      _temp.addAll(compressedData);
+    }, onDone: () {
+      _log("data size before/after Compress: ${data.length}/${_temp.length} bytes");
+      sink.add(_temp);
+    });
+  }
+}
+
+class Extract extends StreamEventTransformer<List<int>, List<int>> {
+  void handleData(List<int> data, EventSink<List<int>> sink) {
+    List<int> _temp = new List();
+    Stream<List<int>> stream = new Stream.fromFuture(new Future.value(data));
+    stream.transform(new ZLibInflater()).listen((List<int> extractedData) {
+      _temp.addAll(extractedData);
+    }, onDone: () {
+      _log("data size before/after Extract: ${data.length}/${_temp.length} bytes");
+      sink.add(_temp);
+    });
   }
 }
