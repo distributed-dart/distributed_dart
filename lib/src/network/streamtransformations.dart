@@ -87,7 +87,14 @@ class NotSerializableObjectException implements Exception {
 }
 
 // Gift from Jacob. Should definitely just made ​​a little about fit into the rest
+/**
+ * Scans objects, for SendPort and _RemoteSendPorts, and rewrites them
+ * Used to support embedding SendPorts inside the payload of a message.
+ */
 class ObjectScanner {
+  final int _SENDPORT = 1;
+  final int _REMOTESENDPORT = 2;
+  
   List<Object> seen = new List<Object>();
   
   void checkCycle(final object) {
@@ -99,13 +106,18 @@ class ObjectScanner {
     seen.add(object);
   }
 
-  Object replaceSendPort(final object) 
-    => scanAndReplaceObject(object, true);
+  /// replace SendPort with _RemoteSendPort,
+  Object replaceSendPort(final object) {
+     return _scanAndReplaceObject(object, _SENDPORT);
+  }
   
-  Object replaceRemoteSendPort(final object) 
-    => scanAndReplaceObject(object, false);
+  /// replace _RemoteSendPort with SendPort,
+  Object replaceRemoteSendPort(final object) { 
+    return _scanAndReplaceObject(object, _REMOTESENDPORT);
+  }
   
-  Object scanAndReplaceObject(final object, bool replaceSendPort) {
+  // replace SendPort with _RemoteSendPort, or vice versa
+  Object _scanAndReplaceObject(final object, int replace) {
     if (object is num) {
       return object;
     } else if (object is bool) {
@@ -119,31 +131,43 @@ class ObjectScanner {
       List a = object;
       if (a.length > 0) {
         a = a.map((Object o) {
-          return scanAndReplaceObject(o, replaceSendPort);
+          return _scanAndReplaceObject(o, replace);
         }).toList(growable:false);
       }
       seen.remove(object);
       return object;
     } else if (object is Map) {
+      
+      // HACK, we cannot detect type "_RemoteSendPort", because it is a
+      // JSON map at this time. So instead we have added a magic cookie.
+      // This should really be expressed by the message header, instead
+      // of inside the payload of the object, since this could be exploited.
+      if(replace == _REMOTESENDPORT && 
+          object.containsKey("RSPID") &&
+          object["RSPID"] == _REMOTE_SENDPORT_MAGIC_COOKIE) {
+        return new _RemoteSendPort.fromJsonMap(object).toSendPort();
+      }
+      
       checkCycle(object);
       Map<String, Object> m = object;
       
       m.keys.forEach((String key) {
         if (key is String) {
-          m[key] = scanAndReplaceObject(m[key], replaceSendPort);
+          m[key] = _scanAndReplaceObject(m[key], replace);
         } else {
           throw new NotSerializableObjectException("Key must be string.");
         }
       });
       seen.remove(object);
       return object;
-    } else if (object is SendPort && replaceSendPort) {
-      return new _LocalIsolate(object).toRemoteSendPort();
-    } else if (object is _RemoteSendPort && !replaceSendPort) {
+    } else if (object is SendPort && replace == _SENDPORT) {
+      return new _LocalIsolate(object).toRemoteSendPort(); 
+    } else if (object is _RemoteSendPort && replace == _REMOTESENDPORT) {
+      _err("Found _RemoteSendPort, this should not happen");
       return object.toSendPort();
     } else {
       checkCycle(object);
-      var r = scanAndReplaceObject(object.toJson(), replaceSendPort);
+      var r = _scanAndReplaceObject(object.toJson(), replace);
       seen.remove(object);
       return r;
     }
