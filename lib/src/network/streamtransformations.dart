@@ -122,7 +122,7 @@ class _ObjectScanner {
         }).toList(growable:false);
       }
       seen.remove(object);
-      return object;
+      return a;
     } else if (object is Map) {
       
       // HACK, we cannot detect type "_RemoteSendPort", because it is a
