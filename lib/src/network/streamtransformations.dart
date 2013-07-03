@@ -28,7 +28,7 @@ class _ByteListDecoder extends StreamEventTransformer {
         remaining = dataView.getUint64(idx);
         idx+=8;
         obj = new List();
-        _log(" > header: ${data.sublist(idx,idx+8)} -> size: $remaining bytes");
+        _log(" > header: ${data.sublist(idx-8,idx)} -> size: $remaining bytes");
       }
 
       // try to get the entire object first
