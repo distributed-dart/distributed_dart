@@ -33,19 +33,18 @@ class _ByteListDecoder extends StreamEventTransformer {
 
       // try to get the entire object first
       // if the data is incomplete, add data to buffer, and ajust remaining
-      List objpart = [];
-      try {
+      List objpart;
+      
+      if (idx+remaining < data.length) {
         objpart = data.sublist(idx,idx+remaining);
-      } 
-      catch (e) {
+      } else {
         objpart = data.sublist(idx); // sublist from index to end
-      } 
-      finally {
-        remaining -= objpart.length;
-        idx += objpart.length;
-        obj.addAll(objpart);
-        _log(" > read ${objpart.length} bytes");
       }
+      
+      remaining -= objpart.length;
+      idx += objpart.length;
+      obj.addAll(objpart);
+      _log(" > read ${objpart.length} bytes");
 
       // object is assembled, write to sink, and mark that we are ready to
       // read the next object.
