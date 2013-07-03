@@ -34,12 +34,15 @@ class _IsolateId {
   }
   
   /// identical and '==' overload
-  int get hashCode => node.hashCode + id;
+  int get hashCode => node.hashCode + id + ts;
   bool operator ==(other) {
     if (identical(this, other)) {
       return true;
     } 
-    return (other is _IsolateId && id == other.id && node == other.node);
+    return (other is _IsolateId && 
+            id == other.id && 
+            node == other.node &&
+            ts == other.ts);
   }
 }
 
