@@ -40,6 +40,31 @@ String _hashListToString(List<int> list) {
   return sb.toString();
 }
 
+String _Uint8ListToBinaryString(Uint8List list) {
+  StringBuffer sb = new StringBuffer("[ ");
+
+  sb.writeAll(list.map((int value) {
+    String radixValue = value.toRadixString(2);
+    
+    if (radixValue.length != 8) {
+      int missing = 8 - radixValue.length;
+      
+      StringBuffer temp = new StringBuffer();
+      for (int i = 0; i < missing; i++) {
+        temp.write("0");
+      }
+      
+      temp.write(radixValue);
+      radixValue = temp.toString();
+    }
+    
+    return radixValue;
+    
+  }), ", ");
+  sb.write(" ]");
+  return sb.toString();
+}
+
 /**
  * Takes the path from the DartCode object and all dependencies and removes
  * unnecessary parts of the path.  E.g.
