@@ -40,6 +40,12 @@ String _hashListToString(List<int> list) {
   return sb.toString();
 }
 
+/**
+ * Convert a [Uint8List] into a String by read each int and convert to a
+ * binary value and output the list as e.g.:
+ * 
+ *     [ 00000000, 00000110, 01001011 ]
+ */
 String _Uint8ListToBinaryString(Uint8List list) {
   StringBuffer sb = new StringBuffer("[ ");
 
