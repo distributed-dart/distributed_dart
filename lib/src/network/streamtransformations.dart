@@ -6,7 +6,7 @@ class _ByteListEncoder extends StreamEventTransformer {
     void handleData (List data, EventSink sink) {
       var size = new Uint8List(8);
       new ByteData.view(size.buffer).setUint64(0,data.length);
-      _log("add header: ${data.length} -> $size");
+      _log("add header: ${data.length} -> ${_Uint8ListToBinaryString(size)}");
       sink.add(size);
       sink.add(data);
     }
