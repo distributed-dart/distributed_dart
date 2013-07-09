@@ -14,31 +14,99 @@ class _ByteListEncoder extends StreamEventTransformer {
 
 // split concatinated objects, or assemble larger objects which has been split 
 class _ByteListDecoder extends StreamEventTransformer {
+  static const int PKG_SIZE_LENGTH = 8; // 64 bit = 8x8 bits
+  
   int remaining = -1;
   List<int> obj = [];
-
-  void handleData(Uint8List data,EventSink<List<int>> sink){
+  List<int> sizeBuffer = null;
+  
+  void handleData(Uint8List data,EventSink<List<int>> sink) {
     var idx = 0;
-    var dataView = new ByteData.view(data.buffer);
+    
     _log("received ${data.length} bytes");
     
     while (idx < data.length) {
+      int data_remaining = (data.length - idx);
+      
       // prepare to read a new object
-      if(remaining == -1 ){
-        remaining = dataView.getUint64(idx);
-        idx+=8;
-        obj = new List();
-        _log(" > header: ${data.sublist(idx-8,idx)} -> size: $remaining bytes");
+      if(remaining == -1) {
+        if (sizeBuffer != null) {
+          // We did not got all data to get the package size from last time we 
+          // run handleData. Therefore we now try get the missing parts of the 
+          // length.
+          
+          // Data we need to get the package size.
+          int neededData = (PKG_SIZE_LENGTH - sizeBuffer.length);
+          
+          if (data_remaining < neededData) {
+            // Well this should never happen but sometimes it is possible to
+            // get unlucky. In this case we recieve a package there are too
+            // small to contain the remaining of the package size.
+            
+            sizeBuffer.addAll(data.getRange(idx, data.length-1));
+            
+            if (logging) {
+              var header = _Uint8ListToBinaryString(sizeBuffer);
+              _log(" > unfinished header. Waiting for the rest: $header");  
+            }
+            
+            break; // Wait for next network package
+          } else {
+            // We recieve enough data to get the package size.
+            
+            sizeBuffer.addAll(data.getRange(idx, idx+neededData));
+            
+            var sizeAsUint8List = new Uint8List.fromList(sizeBuffer);
+            var byteDataView = new ByteData.view(sizeAsUint8List.buffer);
+            
+            remaining = byteDataView.getUint64(idx);
+            idx+=neededData;
+            
+            if (logging) {
+              var headerString = _Uint8ListToBinaryString(sizeBuffer);
+              _log(" > header: $headerString -> size: $remaining bytes");  
+            }
+          }
+        } else {
+          // This is first try to get the package size from data.
+          
+          if (data_remaining < PKG_SIZE_LENGTH) {
+            // Well, there are not enough space left in the network package to
+            // contain the package size. We create a new buffer and wait for 
+            // rest to get the package size.
+            
+            sizeBuffer = new List();
+            sizeBuffer.addAll(data.getRange(idx, data.length-1));
+            
+            if (logging) {
+              var header = _Uint8ListToBinaryString(sizeBuffer);
+              _log(" > unfinished header. Waiting for the rest: $header");  
+            }
+            
+            break; // Wait for next network package
+          } else {
+            // There are enough data to get the package size.
+            
+            var byteDataView = new ByteData.view(data.buffer);
+            
+            remaining = byteDataView.getUint64(idx);
+            idx+=PKG_SIZE_LENGTH;
+            
+            if (logging) {
+              var header = data.sublist(idx-PKG_SIZE_LENGTH,idx);
+              var headerString = _Uint8ListToBinaryString(header);
+              _log(" > header: $headerString -> size: $remaining bytes");  
+            }
+          }
+        }
       }
 
-      // try to get the entire object first
-      // if the data is incomplete, add data to buffer, and ajust remaining
       List objpart;
       
-      if (idx+remaining < data.length) {
-        objpart = data.sublist(idx,idx+remaining);
-      } else {
+      if (data_remaining < remaining) {
         objpart = data.sublist(idx); // sublist from index to end
+      } else {
+        objpart = data.sublist(idx,idx+remaining);
       }
       
       remaining -= objpart.length;
@@ -48,9 +116,10 @@ class _ByteListDecoder extends StreamEventTransformer {
 
       // object is assembled, write to sink, and mark that we are ready to
       // read the next object.
-      if( remaining == 0) {
+      if (remaining == 0) {
         sink.add(obj);
         remaining = -1;
+        obj = new List();
         _log(" > done: total ${obj.length} bytes");
       }
     }
