@@ -14,7 +14,7 @@ class _RequestHandler {
     NodeAddress sender  = new NodeAddress.fromJsonMap(jsonMap[NODE_ADDRESS]);
     var data            = jsonMap[DATA];
     
-    _log("incomming request from ${sender.host} : $requestType");
+    _log("incomming request from ${sender} : $requestType");
     
     if (! allowed.contains(requestType)){
       _log(" > request denied");
