@@ -13,11 +13,12 @@ part of distributed_dart;
 class _DartCodeDb {
   /*
    * Resolve a given Path into a cached FileNode instance. If a Path is 
-   * already parsed one time we don’t need to do it again.
+   * already parsed one time we don’t need to do it again. The Path is
+   * saved as a String which contains the full path.
    * 
-   * Path => FileNode instance (as future)
+   * Full path string => FileNode instance (as future)
    */
-  static Map<Path,Future<_FileNode>> _pathToFileNode = new Map();
+  static Map<String,Future<_FileNode>> _pathToFileNode = new Map();
   
   /*
    * Resolve a given hash checksum value into to content of the file. Because we 
@@ -137,7 +138,7 @@ class _DartCodeDb {
     
     if (useCache) {
       _log("Looking in cache for FileNode object.");
-      node = _pathToFileNode[path];
+      node = _pathToFileNode[uri];
       
       if (node != null) {
         _log("Found FileNode object in cache and return it.");
@@ -297,7 +298,7 @@ class _DartCodeDb {
      * the object.
      */
     _log("Save new FileNode object in cache.");
-    _pathToFileNode[path] = node;
+    _pathToFileNode[uri] = node;
     return node;
   }
   
