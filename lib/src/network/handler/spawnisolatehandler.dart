@@ -16,7 +16,7 @@ _spawnIsolateHandler(dynamic request, NodeAddress sender) {
     response.sendTo(sender);
   }
   // setup local environment and spawn isolate
-  req.code.createSpawnUriEnvironment(new _Network(sender)).then(spawn);
+  req.code.createSpawnUriEnvironment(sender).then(spawn);
 }
 
 ///[_spawnIsolateHandler] data type

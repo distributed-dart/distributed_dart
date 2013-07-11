@@ -11,16 +11,17 @@ class _DartProgram extends _DependencyNode {
   static const String _HASH = "hash";
   static const String _DEPENDENCIES = "dependencies";
 
-  _DartProgram._internal(Path path, List<int> hash, List<_FileNode> dependencies)
-    : super(path,hash,dependencies);
+  _DartProgram._internal(Path path, List<int> hash, List<_FileNode> deps)
+    : super(path,hash,deps);
   
   /**
-   * Create [_DartProgram] instance from [_FileNode] or [_DependencyNode] instance.
+   * Create [_DartProgram] instance from [_FileNode] or [_DependencyNode] 
+   * instance.
    * 
    * All dependencies are converted to [_FileNode] instances and all paths are 
    * relative to the [_DartProgram]. Because the paths are changed, the 
-   * [_DartProgram] instance will contain copies of [_FileNode] instances and not 
-   * the actual [_FileNode] instances.
+   * [_DartProgram] instance will contain copies of [_FileNode] instances and 
+   * not the actual [_FileNode] instances.
    */
   factory _DartProgram(_FileNode program) {
     if (program is _DependencyNode) {
@@ -38,10 +39,10 @@ class _DartProgram extends _DependencyNode {
        * Convert all paths into relative paths by remove all parts of each path
        * there are equal to all others.
        * 
-       * To also do this on the main program we add the program into the list of
-       * dependencies temporary and remove it again. When we remove the object
-       * from the list we save the path and use it when creating the DartProgram
-       * object.
+       * To also do this on the main program we add the program into the list 
+       * of dependencies temporary and remove it again. When we remove the 
+       * object from the list we save the path and use it when creating the 
+       * DartProgram object.
        */
       dependencies.add(program.copy);
       _shortenPaths(dependencies);
@@ -81,9 +82,9 @@ class _DartProgram extends _DependencyNode {
   String _treeHashCache = null;
   
   /**
-   * Returns a calculated SHA1 checksum for the [_DartProgram] object and all the 
-   * dependencies.  The purpose of this checksum is to make sure the checksum 
-   * is different if there are changes in one of the dependencies.
+   * Returns a calculated SHA1 checksum for the [_DartProgram] object and all 
+   * the dependencies.  The purpose of this checksum is to make sure the 
+   * checksum is different if there are changes in one of the dependencies.
    */
   String get treeHash {
     if (_treeHashCache == null) {
@@ -119,13 +120,13 @@ class _DartProgram extends _DependencyNode {
   }
   
   /**
-   * Create an environment for the [_DartProgram] and all dependencies and return 
-   * the path to run (with e.g. [spawnUri]) as a [Future]. Missing files will be
-   * downloaded. The created environment will be placed in the [_workDirPath]
-   * directory where also a cache will be created for previously dowloaded
-   * files.
+   * Create an environment for the [_DartProgram] and all dependencies and 
+   * return the path to run (with e.g. [spawnUri]) as a [Future]. Missing 
+   * files will be downloaded. The created environment will be placed in 
+   * the [_workDirPath] directory where also a cache will be created for 
+   * previously dowloaded files.
    */
-  Future<String> createSpawnUriEnvironment(_Network sender) {
+  Future<String> createSpawnUriEnvironment(NodeAddress sender) {
     _log("Running createSpawnUriEnvironment()");
     Completer c = new Completer();
     

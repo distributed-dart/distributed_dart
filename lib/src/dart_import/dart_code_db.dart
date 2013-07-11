@@ -21,8 +21,8 @@ class _DartCodeDb {
   static Map<String,Future<_FileNode>> _pathToFileNode = new Map();
   
   /*
-   * Resolve a given hash checksum value into to content of the file. Because we 
-   * know the file must have been read one time before (when created 
+   * Resolve a given hash checksum value into to content of the file. Because 
+   * we know the file must have been read one time before (when created 
    * FileNode object) we can use this cache when trying to send files to 
    * other machines on the network.
    * 
@@ -43,14 +43,14 @@ class _DartCodeDb {
   
   /**
    * Check file requests and create network requests for files we not already
-   * have requested. The returned [Future] is completed when all requested files 
-   * is saved on disk.
+   * have requested. The returned [Future] is completed when all requested 
+   * files is saved on disk.
    * 
    * *REMEMBER:* Files are saved in the hashes folder and links is not created.
    * Links should be created for files after the future is completed.
    */
   static Future downloadAndLinkFiles(List<_RequestBundle> requests,
-                                    _Network sender) {
+                                     NodeAddress sender) {
     if (logging) {
       _log("Running downloadFilesAndCreateLinks(");
       requests.forEach((_RequestBundle r) {
@@ -85,7 +85,7 @@ class _DartCodeDb {
     });
     
     // Send list of hashes as web request to sender.
-    sender.send(_NETWORK_FILE_REQUEST_HANDLER, downloadList);
+    new _Network(sender).send(_NETWORK_FILE_REQUEST_HANDLER, downloadList);
     
     return Future.wait(waitingList);
   }
@@ -117,9 +117,10 @@ class _DartCodeDb {
   /**
    * Resolve a URI into a [_FileNode] object. This method looks like the 
    * same as [DartCodeDb.resolveDartProgram] but the main difference is this 
-   * method returns a [_FileNode] object when the [DartCodeDb.resolveDartProgram] 
-   * method returns a [_DartProgram] object. The reason for this design is 
-   * [DartCodeDb._resolve] is designed to be called recursive.
+   * method returns a [_FileNode] object when the 
+   * [DartCodeDb.resolveDartProgram] method returns a [_DartProgram] object. 
+   * The reason for this design is [DartCodeDb._resolve] is designed to be 
+   * called recursive.
    * 
    * [useCache] should be set to false if some of the files has been changed
    * on the filesystem while the program has been running.
@@ -362,8 +363,8 @@ class _DartCodeDb {
           } else {
             /*
              * Well this is awkward. The file has changed and we don’t know the 
-             * placement of another file with the same hash checksum. We need to
-             * throw an exception.
+             * placement of another file with the same hash checksum. We need 
+             * to throw an exception.
              */
             String e = "Hash of the file has changed: Old=$hash New=$newHash";
             throw new FileChangedException("Hash sum is not the same. $e");
@@ -417,8 +418,8 @@ class _DartCodeDb {
        * supported if the user has the right permissions. Instead we use
        * hardlinks on Windows (funny that is okey but not symlinks...)
        * 
-       * WARNING: This fix will properly not work on Windows XP because the need
-       * of the mklink command.
+       * WARNING: This fix will properly not work on Windows XP because the 
+       * need of the mklink command.
        */
       List<String> arguments = ["/C",
                                 "mklink",
