@@ -1,6 +1,6 @@
 part of distributed_dart;
 
-class UnsupportedOperationError implements Error {
+class UnsupportedOperationError extends Error {
   final message;
 
   /** The [message] describes the erroneous argument. */
@@ -14,7 +14,7 @@ class UnsupportedOperationError implements Error {
   }
 }
 
-class JsonCyclicError implements Error {
+class JsonCyclicError extends Error {
   final String message;
   const JsonCyclicError([this.message = ""]);
   String toString() => "Cyclic error!: $message";

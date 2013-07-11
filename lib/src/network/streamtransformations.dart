@@ -200,7 +200,12 @@ class _ObjectScanner {
       if(replace == _REMOTESENDPORT && 
           object.containsKey("RSPID") &&
           object["RSPID"] == _REMOTE_SENDPORT_MAGIC_COOKIE) {
-        return new _RemoteSendPort.fromJsonMap(object).toSendPort();
+        
+        _RemoteSendPort rsp = new _RemoteSendPort.fromJsonMap(object);
+        SendPort sp = rsp.toSendPort();
+        _SendPortDb.add(sp, rsp);
+        
+        return sp;
       }
       
       checkCycle(object);
@@ -216,6 +221,12 @@ class _ObjectScanner {
       seen.remove(object);
       return object;
     } else if (object is SendPort && replace == _SENDPORT) {
+      _RemoteSendPort rsp = _SendPortDb.getRemoteSendPort(object);
+      
+      if (rsp == null) {
+        rsp = new _LocalIsolate(object).toRemoteSendPort();
+      }
+      
       return new _LocalIsolate(object).toRemoteSendPort(); 
     } else if (object is _RemoteSendPort && replace == _REMOTESENDPORT) {
       _err("Found _RemoteSendPort, this should not happen");
