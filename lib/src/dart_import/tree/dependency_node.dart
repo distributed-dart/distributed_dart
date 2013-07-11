@@ -40,6 +40,8 @@ class _DependencyNode extends _FileNode {
     return set;
   }
   
+  int get hashCode => _path.hashCode;
+  
   bool operator ==(other) {
     if (identical(this, other)) {
       return true;
