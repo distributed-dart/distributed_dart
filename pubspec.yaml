@@ -5,5 +5,6 @@ description: Distributed Dart
 homepage: https://github.com/SW108F13-AAU/distributed_dart
 dependencies:
   crypto: any
+  pathos: any
 dev_dependencies:
   unittest: any

@@ -1,6 +1,7 @@
 library distributed_dart;
 
 // Dart API
+//import 'dart:io' hide Path;
 import 'dart:io';
 import 'dart:async';
 import 'dart:isolate';
@@ -9,6 +10,7 @@ import 'dart:typed_data';
 
 // Included packages
 import 'package:crypto/crypto.dart';
+//import 'package:pathos/path.dart' as path;
 
 // Global library stuff used in different parts
 part 'src/exceptions.dart';
@@ -28,6 +30,7 @@ part 'src/dart_import/scanner.dart';
 
 // Isolate control
 part 'src/isolates/isolates.dart';
+part 'src/isolates/sendportdb.dart';
 
 // Network system for communication between nodes
 part 'src/network/network.dart';
