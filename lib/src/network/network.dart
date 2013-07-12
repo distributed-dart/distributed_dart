@@ -57,7 +57,7 @@ class _Network {
     .transform(new _JsonEncoder())
     .transform(new _JsonLogger("outgoing json"))
     .transform(new StringEncoder())
-    .transform(new _Compress())
+//    .transform(new _Compress()) <- Very bad performance
     .transform(new _ByteListEncoder())
     .listen(socket.add);
   }
@@ -67,7 +67,7 @@ class _Network {
     _log("new incomming connection");
     socket
     .transform(new _ByteListDecoder())
-    .transform(new _Extract())
+//    .transform(new _Extract()) <- Very bad performance
     .transform(new StringDecoder())
     .transform(new _JsonLogger("incomming json"))
     .transform(new _JsonDecoder())
