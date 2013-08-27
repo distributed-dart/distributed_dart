@@ -11,7 +11,7 @@ import 'dart:typed_data';
 
 // Included packages
 import 'package:crypto/crypto.dart';
-//import 'package:pathos/path.dart' as path;
+import 'package:path/path.dart' as path;
 
 // Global library stuff used in different parts
 part 'src/exceptions.dart';
