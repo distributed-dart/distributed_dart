@@ -5,7 +5,7 @@ part of distributed_dart;
  * if not intialized, a default directory in a os specific cache folder
  * is returned
  */
-Path _workDirPath;
+String _workDirPath;
 
 void registerNode(NodeAddress node, [bool allowremote=false, String workdir]) {
   //kregisterNode must not be called more than once
@@ -17,7 +17,7 @@ void registerNode(NodeAddress node, [bool allowremote=false, String workdir]) {
   NodeAddress._localhost = node;
   
   // set path to where to store received files
-  _workDirPath = (workdir == null) ? _getDefaultWorkDir() : new Path(workdir);
+  _workDirPath = (workdir == null) ? _getDefaultWorkDir() : workdir;
   
   // setup requesthandlers
   _RequestHandler.allow(_NETWORK_FILE_HANDLER);
@@ -34,15 +34,15 @@ void registerNode(NodeAddress node, [bool allowremote=false, String workdir]) {
 }
 
 /// Returns a default value for working directory based on running OS.
-Path _getDefaultWorkDir() {
-  Path defaultPath;
+String _getDefaultWorkDir() {
+  String defaultPath;
 
   if (Platform.operatingSystem == "windows"){
-    defaultPath = new Path(Platform.environment['LOCALAPPDATA']);
-    defaultPath = defaultPath.append('distributed_dart');
+    defaultPath = Platform.environment['LOCALAPPDATA'];
+    defaultPath = path.join(defaultPath, 'distributed_dart');
   } else {
-    defaultPath = new Path(Platform.environment['HOME']);
-    defaultPath = defaultPath.append('.cache/distributed_dart');
+    defaultPath = Platform.environment['HOME'];
+    defaultPath = path.join(defaultPath, '.cache/distributed_dart');
   }
 
   return defaultPath;
