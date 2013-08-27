@@ -4,6 +4,7 @@ library distributed_dart;
 //import 'dart:io' hide Path;
 import 'dart:io';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:isolate';
 import 'dart:json' as json;
 import 'dart:typed_data';
