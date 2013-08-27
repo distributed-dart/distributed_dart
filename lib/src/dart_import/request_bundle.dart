@@ -12,10 +12,10 @@ class _RequestBundle {
   final String fileHash;
   
   /// Path the downloaded file should be saved.
-  final Path hashFilePath;
+  final String hashFilePath;
   
   /// Path to link there should link to [hashFilePath].
-  final Path filePath;
+  final String filePath;
   
   /// Create a [_RequestBundle] object.
   _RequestBundle(this.fileHash, this.hashFilePath, this.filePath);
@@ -27,7 +27,7 @@ class _RequestBundle {
   
   /// Save [data] into the file [hashFilePath].
   Future saveFile(List<int> data) {
-    return new File.fromPath(hashFilePath).writeAsBytes(data);
+    return new File(hashFilePath).writeAsBytes(data);
   }
   
   /**
