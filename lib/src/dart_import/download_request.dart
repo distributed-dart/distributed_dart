@@ -4,9 +4,9 @@ class _DownloadRequest {
   final Completer<List<int>> completer;
   Future future;
   
-  _DownloadRequest(Path destination) : completer = new Completer() {
+  _DownloadRequest(String destinationPath) : completer = new Completer() {
     this.future = completer.future.then((List<int> fileContent) {
-      return new File.fromPath(destination).writeAsBytes(fileContent);
+      return new File(destinationPath).writeAsBytes(fileContent);
     });
   }
 }
