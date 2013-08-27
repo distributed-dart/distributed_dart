@@ -16,6 +16,6 @@ class UnsupportedOperationError extends Error {
 
 class JsonCyclicError extends Error {
   final String message;
-  const JsonCyclicError([this.message = ""]);
+  JsonCyclicError([this.message = ""]);
   String toString() => "Cyclic error!: $message";
 }
