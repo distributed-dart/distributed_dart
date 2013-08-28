@@ -173,7 +173,7 @@ class _DartCodeDb {
       _log("The extension of the file is: $extension");
       
       // File there specify additional dependencies
-      if (extension == "distdartdeps") {
+      if (extension == ".distdartdeps") {
         _log("'distdartdeps' extension so we scan for dependencies.");
         
         return new Stream.fromIterable([bytes]).transform(UTF8.decoder)
@@ -199,8 +199,8 @@ class _DartCodeDb {
       }
       
       // Only scan Dart files. All other files should just be accepted.
-      if (extension != "dart") {
-        _log("File is not distdartdeps or dart so we just return it.");
+      if (extension != ".dart") {
+        _log("File is not .distdartdeps or .dart so we just return it.");
         return new _FileNode(filePath, hash);
       }
       
@@ -423,8 +423,8 @@ class _DartCodeDb {
       List<String> arguments = ["/C",
                                 "mklink",
                                 "/H",
-                                destinationPath, 
-                                sourcePath];
+                                path.normalize(destinationPath), 
+                                path.normalize(sourcePath)];
       
       if (logging) {
         StringBuffer sb = new StringBuffer("cmd");
@@ -435,14 +435,14 @@ class _DartCodeDb {
       }
       Process.run("cmd", arguments).then((ProcessResult result) {
         _log("Result from process for link creation:");
-        _log("     Link destination: ${destinationPath}");
-        _log("     Link source: ${sourcePath}");
+        _log("     Link destination: ${path.normalize(destinationPath)}");
+        _log("     Link source: ${path.normalize(sourcePath)}");
         
         if (!result.stdout.isEmpty) _log("     stdout: ${result.stdout}");
         
         if (!result.stderr.isEmpty) {
-          _err("     Link destination: ${destinationPath}");
-          _err("     Link source: ${sourcePath}");
+          _err("     Link destination: ${path.normalize(destinationPath)}");
+          _err("     Link source: ${path.normalize(sourcePath)}");
           _err("     stderr: ${result.stderr}");
         }
         
@@ -451,7 +451,7 @@ class _DartCodeDb {
           c.complete();
         } else {
           throw new LinkException("Could not create link.", 
-                                  destinationPath,
+                                  path.normalize(destinationPath),
                                   new OSError(result.stderr, result.exitCode));
         }
       });
