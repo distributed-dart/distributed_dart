@@ -11,8 +11,8 @@ class _DartProgram extends _DependencyNode {
   static const String _HASH = "hash";
   static const String _DEPENDENCIES = "dependencies";
 
-  _DartProgram._internal(Path path, List<int> hash, List<_FileNode> deps)
-    : super(path,hash,deps);
+  _DartProgram._internal(String filePath, List<int> hash, List<_FileNode> deps)
+    : super(filePath,hash,deps);
   
   /**
    * Create [_DartProgram] instance from [_FileNode] or [_DependencyNode] 
@@ -23,7 +23,7 @@ class _DartProgram extends _DependencyNode {
    * [_DartProgram] instance will contain copies of [_FileNode] instances and 
    * not the actual [_FileNode] instances.
    */
-  factory _DartProgram(_FileNode program) {
+  factory _DartProgram(var program) {
     if (program is _DependencyNode) {
       Set set = new Set();
       
@@ -46,15 +46,15 @@ class _DartProgram extends _DependencyNode {
        */
       dependencies.add(program.copy);
       _shortenPaths(dependencies);
-      Path newPath = dependencies.removeLast()._path;
+      String newPath = dependencies.removeLast()._filePath;
       
       return new _DartProgram._internal(newPath,
-                                       program._fileHash,
-                                       dependencies);
+                                        program._fileHash,
+                                        dependencies);
     } else {
-      return new _DartProgram._internal(new Path(program.name),
-                                       program._fileHash,
-                                       []);
+      return new _DartProgram._internal(program.name,
+                                        program._fileHash,
+                                        []);
     }
   }
   
@@ -64,14 +64,14 @@ class _DartProgram extends _DependencyNode {
     
     if (jsonMap.containsKey(_DEPENDENCIES) && jsonMap[_DEPENDENCIES] != null) {
       jsonMap[_DEPENDENCIES].forEach((Map fileNodeMap) {
-        _FileNode newNode = new _FileNode(new Path(fileNodeMap[_PATH]), 
-                                        fileNodeMap[_HASH]);
+        _FileNode newNode = new _FileNode(fileNodeMap[_PATH], 
+                                          fileNodeMap[_HASH]);
         dependencies.add(newNode);
       });
     }
     
-    return new _DartProgram._internal(new Path(jsonMap[_PATH]), jsonMap[_HASH],
-                                     dependencies);
+    return new _DartProgram._internal(jsonMap[_PATH], jsonMap[_HASH],
+                                      dependencies);
   }
   
   /*
@@ -102,14 +102,14 @@ class _DartProgram extends _DependencyNode {
     
     var returnMap = new Map();
     
-    returnMap[_PATH] = this._path.toString();
+    returnMap[_PATH] = this._filePath.toString();
     returnMap[_HASH] = this._fileHash;
     
     if (this._dependencies != null && this._dependencies.length > 0) {
       returnMap[_DEPENDENCIES] = this._dependencies.map((_FileNode node) {
         var map = new Map();
         
-        map[_PATH] = node._path.toString();
+        map[_PATH] = node._filePath.toString();
         map[_HASH] = node._fileHash;
         
         return map;
@@ -130,22 +130,22 @@ class _DartProgram extends _DependencyNode {
     _log("Running createSpawnUriEnvironment()");
     Completer c = new Completer();
     
-    Path hashDirPath     = _workDirPath.append("hashes/");
-    Path isolateDirPath  = _workDirPath.append("isolates/");
+    String hashDirPath     = path.join(_workDirPath, "hashes/");
+    String isolateDirPath  = path.join(_workDirPath, "isolates/");
     
     _log("     workDirPath          = $_workDirPath");
     _log("     hashDirPath          = $hashDirPath");
     _log("     isolateDirectoryPath = $isolateDirPath");
     
-    Directory hashDirectory    = new Directory.fromPath(hashDirPath);
-    Directory isolateDirectory = new Directory.fromPath(isolateDirPath);
+    Directory hashDirectory    = new Directory(hashDirPath);
+    Directory isolateDirectory = new Directory(isolateDirPath);
     
     Future createHashDirFuture    = hashDirectory.create(recursive:true);
     Future createIsolateDirFuture = isolateDirectory.create(recursive:true);
     
     Future.wait([createHashDirFuture, createIsolateDirFuture]).then((_) {
-      Path spawnDirectoryPath = isolateDirPath.append(this.treeHash);
-      File spawnFile = new File.fromPath(spawnDirectoryPath.join(this.path));
+      String spawnDirectoryPath = path.join(isolateDirPath, this.treeHash);
+      File spawnFile = new File(path.join(spawnDirectoryPath, this.filePath));
       
       _log("Spawn file path: ${spawnFile.path}");
       
@@ -153,19 +153,19 @@ class _DartProgram extends _DependencyNode {
         if (fileExists) {
           c.complete(spawnFile.path);
         } else {
-          Set<Path> directoriesToCreate = new Set<Path>(); 
+          Set<String> directoriesToCreate = new Set<String>(); 
 
           Set<_FileNode> neededFiles = this.getFileNodes();
           
           // Create list of directories there is needed
           neededFiles.forEach((_FileNode node) {
-            Path directory = spawnDirectoryPath.join(node.path).directoryPath;
-            directoriesToCreate.add(directory);
+            String tempPath = path.join(spawnDirectoryPath, node.filePath);
+            directoriesToCreate.add(path.dirname(tempPath));
           });
           
           // Create needed directories
-          Future.wait(directoriesToCreate.map((Path directoryPath) {
-            Directory directory = new Directory.fromPath(directoryPath);
+          Future.wait(directoriesToCreate.map((String directoryPath) {
+            Directory directory = new Directory(directoryPath);
             return directory.create(recursive:true);
           })).then((_) {
             // This step insert the files into the environment. First its try
@@ -174,13 +174,13 @@ class _DartProgram extends _DependencyNode {
             List<_RequestBundle> missing = new List<_RequestBundle>();
             
             Future.wait(neededFiles.map((_FileNode node) {
-              Path hashFilePath = hashDirPath.append(node.fileHashString);
+              String hashFilePath = path.join(hashDirPath, node.fileHashString);
               
-              File hashFile = new File.fromPath(hashFilePath);
+              File hashFile = new File(hashFilePath);
               
-              Path filePath = spawnDirectoryPath.join(node.path);
+              String filePath = path.join(spawnDirectoryPath, node.filePath);
               _log("spawnDirectoryPath: $spawnDirectoryPath");
-              _log("node.path: ${node.path}");
+              _log("node.path: ${node.filePath}");
               
               return hashFile.exists().then((bool hashFileExists) {
                 if (!hashFileExists) {
@@ -210,17 +210,17 @@ class _DartProgram extends _DependencyNode {
       });
     });
     
-    return c.future.then((String path) {
-      if (new Path(path).isAbsolute) {
-        return path;
+    return c.future.then((String filePath) {
+      if (path.isAbsolute(filePath)) {
+        return filePath;
       }
       
       // Append current working directory for the running Dart process
-      Path processDir = new Path(Directory.current.path);
-      String fullPath = processDir.append(path).toNativePath();
+      String processDir = path.current;
+      String fullPath = path.join(processDir, filePath);
       
       _log("Append current process working directory:");
-      _log("     File to spawn:     $path");
+      _log("     File to spawn:     $filePath");
       _log("     Process directory: ${processDir.toString()}");
       _log("     Full path:         $fullPath");
       
