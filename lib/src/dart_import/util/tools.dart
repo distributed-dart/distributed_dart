@@ -98,6 +98,7 @@ int _shortenPaths(List<_FileNode> dependencies) {
     
     dependencies.forEach((_FileNode node) {
       if (first) {
+        first = false;
         sb.write("${node.filePath}");
       } else {
         sb.write(", ${node.filePath}");
