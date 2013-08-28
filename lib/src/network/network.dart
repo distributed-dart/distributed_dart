@@ -54,10 +54,10 @@ class _Network {
   /// outging data is encoded, and sent via the shared socket
   _outgoing(Socket socket){
     _sc.stream
-    .transform(new _JsonEncoder())
+    .transform(new _DataConverter(new JsonEncoder()))
     .transform(new _JsonLogger("outgoing json"))
-    .transform(UTF8.encoder)
-//    .transform(new _Compress()) <- Very bad performance
+    .transform(new _DataConverter(new Utf8Encoder()))
+    .transform(new _DataConverter(new ZLibEncoder()))
     .transform(new _ByteListEncoder())
     .listen(socket.add);
   }
@@ -67,10 +67,10 @@ class _Network {
     _log("new incomming connection");
     socket
     .transform(new _ByteListDecoder())
-//    .transform(new _Extract()) <- Very bad performance
-    .transform(UTF8.decoder)
+    .transform(new _DataConverter(new ZLibDecoder()))
+    .transform(new _DataConverter(new Utf8Decoder(allowMalformed: false)))
     .transform(new _JsonLogger("incomming json"))
-    .transform(new _JsonDecoder())
+    .transform(new _DataConverter(new JsonDecoder(null)))
     .listen(_RequestHandler.notify);
   }
 }
@@ -83,31 +83,5 @@ class _JsonLogger extends StreamEventTransformer<String, String> {
   void handleData(String data, EventSink<String> sink){
     _log("$name: $data");
     sink.add(data);
-  }
-}
-
-class _Compress extends StreamEventTransformer<List<int>, List<int>> {
-  void handleData(List<int> data, EventSink<List<int>> sink) {
-    List<int> _temp = new List();
-    Stream<List<int>> stream = new Stream.fromFuture(new Future.value(data));
-    stream.transform(new ZLibEncoder()).listen((List<int> compressedData) {
-      _temp.addAll(compressedData);
-    }, onDone: () {
-      _log("data size before/after Compress: ${data.length}/${_temp.length} bytes");
-      sink.add(_temp);
-    });
-  }
-}
-
-class _Extract extends StreamEventTransformer<List<int>, List<int>> {
-  void handleData(List<int> data, EventSink<List<int>> sink) {
-    List<int> _temp = new List();
-    Stream<List<int>> stream = new Stream.fromFuture(new Future.value(data));
-    stream.transform(new ZLibDecoder()).listen((List<int> extractedData) {
-      _temp.addAll(extractedData);
-    }, onDone: () {
-      _log("data size before/after Extract: ${data.length}/${_temp.length} bytes");
-      sink.add(_temp);
-    });
   }
 }

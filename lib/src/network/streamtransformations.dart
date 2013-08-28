@@ -126,19 +126,12 @@ class _ByteListDecoder extends StreamEventTransformer {
   }
 }
 
-class _JsonEncoder extends StreamEventTransformer <dynamic,String> {
-  void handleData(dynamic data, EventSink<String> sink){
-    try {
-      sink.add(json.stringify(data));
-    } catch (e){
-      _err(e);
-    }
-  }
-}
-
-class _JsonDecoder extends StreamEventTransformer<String, dynamic> {
-  void handleData(String data, EventSink<dynamic> sink){
-    sink.add(json.parse(data));
+class _DataConverter extends StreamEventTransformer<dynamic, dynamic> {
+  final Converter _converter;
+  _DataConverter(this._converter);
+  
+  void handleData(dynamic data, EventSink<dynamic> sink) {
+    sink.add(_converter.convert(data));
   }
 }
 
