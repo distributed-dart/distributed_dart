@@ -36,7 +36,7 @@ class _DartCodeDb {
    * doing this). By clean the cache the program doesn’t contains the content 
    * of the file but we still want to be able to give access to the content.
    */
-  static Map<String,Path> _hashToPathCache = new Map();
+  static Map<String,String> _hashToPathCache = new Map();
   
   // Liste over filer der er blevet forespurgt om og som afventer fuldførsel
   static Map<String,_DownloadRequest> _downloadQueue = new Map();
@@ -102,11 +102,11 @@ class _DartCodeDb {
                                                 {bool useCache: true}) {
     _log("Running resolveDartProgram($uri, $useCache)");
     
-    return new File(uri).fullPath().then((String path) {
-      Path dir = new Path(path).directoryPath;
-      Path packageDir = dir.append("packages");
+    return new File(uri).fullPath().then((String filePath) {
+      String dir = path.dirname(filePath);
+      String packageDir = path.join(dir, 'packages');
       
-      return _DartCodeDb._resolve(path, packageDir, useCache:useCache).then(
+      return _DartCodeDb._resolve(filePath, packageDir, useCache:useCache).then(
           (_FileNode node) {
             _DartProgram code = new _DartProgram(node);
             return code;
@@ -125,21 +125,20 @@ class _DartCodeDb {
    * [useCache] should be set to false if some of the files has been changed
    * on the filesystem while the program has been running.
    */
-  static Future<_FileNode> _resolve(String uri, 
-                                    Path packageDir, 
+  static Future<_FileNode> _resolve(String filePath, 
+                                    String packageDir, 
                                     {bool useCache: true} ) {
     
-    _log("Running DartCodeDb.resolve($uri, $useCache)");
-    File sourceFile = new File(uri);
+    _log("Running DartCodeDb.resolve($filePath, $useCache)");
+    File sourceFile = new File(filePath);
     
-    Path path = new Path(uri);
-    Path dir = path.directoryPath;
+    String dir = path.dirname(filePath);
     
     Future<_FileNode> node;
     
     if (useCache) {
       _log("Looking in cache for FileNode object.");
-      node = _pathToFileNode[uri];
+      node = _pathToFileNode[filePath];
       
       if (node != null) {
         _log("Found FileNode object in cache and return it.");
@@ -150,7 +149,7 @@ class _DartCodeDb {
 
     _log("Create new FileNode object (queue async file read).");
     node = sourceFile.readAsBytes().then((List<int> bytes) {
-      _log("Finish reading and now working on: $uri");
+      _log("Finish reading and now working on: $filePath");
       
       // Calculate SHA1 hashsum of the file.
       _log("Calculate SHA1 checksum.");
@@ -168,32 +167,32 @@ class _DartCodeDb {
       _log("Saving information in _sourceCache and _hashToPathCache.");
       String hashString = _hashListToString(hash);
       _sourceCache[hashString] = new Future.value(bytes);
-      _hashToPathCache[hashString] = path;
+      _hashToPathCache[hashString] = filePath;
       
-      String extension = path.extension.toLowerCase();
+      String extension = path.extension(filePath).toLowerCase();
       _log("The extension of the file is: $extension");
       
       // File there specify additional dependencies
       if (extension == "distdartdeps") {
         _log("'distdartdeps' extension so we scan for dependencies.");
         
-        return new Stream.fromIterable([bytes]).transform(new StringDecoder())
-          .transform(new LineTransformer())
+        return new Stream.fromIterable([bytes]).transform(UTF8.decoder)
+          .transform(new LineSplitter())
           .transform(new StreamTransformer<String, Future<_FileNode>>(
             handleData: (String depUri, EventSink<Future<_FileNode>> sink) {
               String depUriTrim = depUri.trim();
               
               // If started with # it is a comment and should be ignored
               if (!depUriTrim.isEmpty && !depUriTrim.startsWith("#")) {
-                String file = dir.join(new Path(depUriTrim)).toNativePath();
-                sink.add(_resolve(file, packageDir, useCache: useCache));  
+                String filePath = path.join(dir, depUriTrim);
+                sink.add(_resolve(filePath, packageDir, useCache: useCache));  
               }
           })).toList().then((List<Future<_FileNode>> dependencies) {
             return Future.wait(dependencies).then((List<_FileNode> list) {
               if (list.length > 0) {
-                return new _DependencyNode(path, hash, list);
+                return new _DependencyNode(filePath, hash, list);
               } else {
-                return new _FileNode(path, hash);
+                return new _FileNode(filePath, hash);
               }
             });
           });
@@ -202,12 +201,12 @@ class _DartCodeDb {
       // Only scan Dart files. All other files should just be accepted.
       if (extension != "dart") {
         _log("File is not distdartdeps or dart so we just return it.");
-        return new _FileNode(path, hash);
+        return new _FileNode(filePath, hash);
       }
       
       // Parse the Dart file with the scanner and get dependencies
       _log("File is a dart file.");
-      _log("Create and run scanner for: $uri");
+      _log("Create and run scanner for: $filePath");
       Runes runes = (new String.fromCharCodes(bytes)).runes;
       _log("Runes created!");
       
@@ -226,39 +225,39 @@ class _DartCodeDb {
           _log("Dependency found: $path"); 
           return true;
         }
-      }).map((String path) {
-        Path filePath;
+      }).map((String dependencyPath) {
+        String fullDependencyPath;
         
-        if (path.startsWith("package:")) {
-          _log("Dependency use the package dir: $path");
-          String pathString = path.substring("package:".length);
-          filePath = packageDir.append(pathString);
+        if (dependencyPath.startsWith("package:")) {
+          _log("Dependency use the package dir: $dependencyPath");
+          String temp = dependencyPath.substring("package:".length);
+          fullDependencyPath = path.join(packageDir, temp);
         } else {
-          _log("Normal Dependency without package: $path");
-          filePath = dir.append(path);
+          _log("Normal Dependency without package: $dependencyPath");
+          fullDependencyPath = path.join(dir, dependencyPath);
         }
-        _log("    Full path is: ${filePath.toNativePath()}");
+        _log("    Full path is: ${fullDependencyPath}");
         
         _log("Create async task with: resolve(");
-        _log("(${filePath.toNativePath()}, $packageDir, useCache:$useCache))");
+        _log("(${fullDependencyPath}, $packageDir, useCache:$useCache))");
         
-        return _resolve(filePath.toNativePath(), packageDir, useCache:useCache);
+        return _resolve(fullDependencyPath, packageDir, useCache:useCache);
       })).then((List<_FileNode> dependencies) {
         if (dependencies.length > 0) {
-          return new _DependencyNode(path,hash,dependencies);
+          return new _DependencyNode(filePath,hash,dependencies);
         } else {
-          return new _FileNode(path,hash); 
+          return new _FileNode(filePath,hash); 
         }
       });
-    }).then((_FileNode origNode) {
-      _log("Got all dependencies for $uri");
+    }).then((var origNode) {
+      _log("Got all dependencies for $filePath");
       
       if (origNode.name.endsWith(".distdartdeps")) {
         _log("File is a .distdartdeps file so we just return it.");
         return origNode;
       }
       
-      String distDartDepsFile = "${path.toNativePath()}.distdartdeps";
+      String distDartDepsFile = "${filePath}.distdartdeps";
       
       _log("Create async task to check existence of file: $distDartDepsFile");
       return new File(distDartDepsFile).exists().then((bool fileExists) {
@@ -282,7 +281,7 @@ class _DartCodeDb {
                 } else {
                   _log("Convert original FileNode to DependencyNode.");
                   
-                  return new _DependencyNode(origNode.path, 
+                  return new _DependencyNode(origNode.filePath, 
                                             origNode.fileHash, [node]);
                 }
               });
@@ -299,7 +298,7 @@ class _DartCodeDb {
      * the object.
      */
     _log("Save new FileNode object in cache.");
-    _pathToFileNode[uri] = node;
+    _pathToFileNode[filePath] = node;
     return node;
   }
   
@@ -342,12 +341,12 @@ class _DartCodeDb {
       // We are lucky. The file is directly found in the file content cache.
       return cacheContent;
     } else {
-      Path contentPath = _hashToPathCache[hash];
+      String contentPath = _hashToPathCache[hash];
       
       if (contentPath != null) {
         // The file is not found in cache but the path is. Now we try read from
         // the path.
-        File contentFile = new File.fromPath(contentPath);
+        File contentFile = new File(contentPath);
         
         Future<List<int>> content;
         
@@ -405,8 +404,8 @@ class _DartCodeDb {
    * [Link](http://api.dartlang.org/docs/releases/latest/dart_io/Link.html) 
    * class to create symlinks.
    */
-  static Future createLink(Path source, Path destination) {
-    _log("Running createLink(${source.toString()}, ${destination.toString()})");
+  static Future createLink(String sourcePath, String destinationPath) {
+    _log("Running createLink($sourcePath, $destinationPath)");
     
     Completer c = new Completer();
     
@@ -424,8 +423,8 @@ class _DartCodeDb {
       List<String> arguments = ["/C",
                                 "mklink",
                                 "/H",
-                                destination.toNativePath(), 
-                                source.toNativePath()];
+                                destinationPath, 
+                                sourcePath];
       
       if (logging) {
         StringBuffer sb = new StringBuffer("cmd");
@@ -436,14 +435,14 @@ class _DartCodeDb {
       }
       Process.run("cmd", arguments).then((ProcessResult result) {
         _log("Result from process for link creation:");
-        _log("     Link destination: ${destination.toNativePath()}");
-        _log("     Link source: ${source.toNativePath()}");
+        _log("     Link destination: ${destinationPath}");
+        _log("     Link source: ${sourcePath}");
         
         if (!result.stdout.isEmpty) _log("     stdout: ${result.stdout}");
         
         if (!result.stderr.isEmpty) {
-          _err("     Link destination: ${destination.toNativePath()}");
-          _err("     Link source: ${source.toNativePath()}");
+          _err("     Link destination: ${destinationPath}");
+          _err("     Link source: ${sourcePath}");
           _err("     stderr: ${result.stderr}");
         }
         
@@ -452,7 +451,7 @@ class _DartCodeDb {
           c.complete();
         } else {
           throw new LinkException("Could not create link.", 
-                                  destination.toNativePath(),
+                                  destinationPath,
                                   new OSError(result.stderr, result.exitCode));
         }
       });
@@ -461,17 +460,18 @@ class _DartCodeDb {
       _log("Create hardlink by using Dart own Link class.");
       
       StringBuffer sb = new StringBuffer();
-      for (int a = 1; a < destination.segments().length; a++) {
+      for (int a = 1; a < path.split(destinationPath).length; a++) {
         sb.write("../");
       }
+      sb.write(sourcePath);
       
-      Path releativeSource = new Path(sb.toString() + source.toString());
+      String releativeSource = sb.toString();
       
-      Link link = new Link.fromPath(destination);
+      Link link = new Link(destinationPath);
       link.create(releativeSource.toString()).then((_) {
         _log("Link succesfully created:");
-        _log("     Link destination: ${destination.toNativePath()}");
-        _log("     Link source: ${releativeSource.toNativePath()}");
+        _log("     Link destination: ${destinationPath}");
+        _log("     Link source: ${releativeSource}");
         c.complete();
       });
     }

@@ -98,9 +98,9 @@ int _shortenPaths(List<_FileNode> dependencies) {
     
     dependencies.forEach((_FileNode node) {
       if (first) {
-        sb.write("${node.path}");
+        sb.write("${node.filePath}");
       } else {
-        sb.write(", ${node.path}");
+        sb.write(", ${node.filePath}");
       }
     });
     
@@ -110,13 +110,13 @@ int _shortenPaths(List<_FileNode> dependencies) {
   
   // Get all segments of all paths in dependencies and this DartCode instance.
   List<List<String>> paths = dependencies.map((_FileNode node) {
-    return node.path.segments();
+    return path.split(node.filePath);
   }).toList(growable: false);
   
   int segmentsToRemove = _countEqualSegments(paths);
   
   dependencies.forEach((_FileNode node) {
-    node._path = _removeSegmentsOfPath(node._path, segmentsToRemove);
+    node._filePath = _removeSegmentsOfPath(node._filePath, segmentsToRemove);
   });
   
   return segmentsToRemove;
@@ -171,9 +171,9 @@ int _countEqualSegments(List<List<String>> paths) {
  *     p = _removeSegmentsOfPath(p,3);
  *     p == new Path("Programs\\Fun\\main.dart");
  */
-Path _removeSegmentsOfPath(Path path, int segmentsToRemove) {
+String _removeSegmentsOfPath(String filePath, int segmentsToRemove) {
   StringBuffer sb = new StringBuffer();
-  List<String> segments = path.segments();
+  List<String> segments = path.split(filePath);
   
   bool first = true;
   
@@ -191,5 +191,5 @@ Path _removeSegmentsOfPath(Path path, int segmentsToRemove) {
     sb.write(segment);
   });
   
-  return new Path(sb.toString());
+  return sb.toString();
 }

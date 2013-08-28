@@ -10,7 +10,7 @@ class _DependencyNode extends _FileNode {
    */
   List<_FileNode> get dependencies => _dependencies.toList(growable: false);
   
-  _DependencyNode(Path path,
+  _DependencyNode(String path,
       List<int> fileHash, 
       this._dependencies) 
       : super(path,fileHash);
@@ -33,20 +33,20 @@ class _DependencyNode extends _FileNode {
       set = new Set<_FileNode>();
     }
     
-    set.add(new _FileNode(this._path, this._fileHash));
+    set.add(new _FileNode(this._filePath, this._fileHash));
     _dependencies.forEach((_FileNode node) {
       set = node.getFileNodes(set);
     });
     return set;
   }
   
-  int get hashCode => _path.hashCode;
+  int get hashCode => _filePath.hashCode;
   
   bool operator ==(other) {
     if (identical(this, other)) {
       return true;
     } else if (other is _DependencyNode) {
-      if (_path != other._path) return false;
+      if (_filePath != other._filePath) return false;
       if (_compareLists(_fileHash, other._fileHash)) return false;
       if (_dependencies != other._dependencies) return false;
       

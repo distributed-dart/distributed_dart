@@ -2,16 +2,16 @@ part of distributed_dart;
 
 /// Represents a file in the tree without dependencies.
 class _FileNode {
-  Path _path;
+  String _filePath;
   List<int> _fileHash;
 
-  _FileNode(this._path, this._fileHash);
+  _FileNode(this._filePath, this._fileHash);
   
   /// File name of the file the object represent.
-  String get name => _path.filename;
+  String get name => path.basename(_filePath);
   
   /// [Path] to the file the object represent.
-  Path get path => _path;
+  String get filePath => _filePath;
   
   /// SHA1 checksum of the file the object represent as a [String].
   String get fileHashString => _hashListToString(_fileHash);
@@ -31,9 +31,9 @@ class _FileNode {
   }
   
   /// Returns a copy of this object.
-  _FileNode get copy => new _FileNode(_path, _fileHash);
+  _FileNode get copy => new _FileNode(_filePath, _fileHash);
   
-  int get hashCode => _path.hashCode;
+  int get hashCode => _filePath.hashCode;
   
   bool operator ==(other) {
     if (identical(this, other)) {
@@ -41,7 +41,7 @@ class _FileNode {
     }
     
     if (other is _FileNode) {
-      if (_path.toString() != other._path.toString()) return false;
+      if (_filePath.toString() != other._filePath.toString()) return false;
       if (!_compareLists(this._fileHash, other._fileHash)) return false;
       
       return true;
