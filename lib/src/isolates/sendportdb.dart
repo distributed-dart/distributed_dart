@@ -12,8 +12,8 @@ class _SendPortDb {
     remoteToPort[rsp] = sp;
     portToRemote[sp] = rsp;
     
-    _log("remoteToPort: ${remoteToPort.length}");
-    _log("portToRemote: ${portToRemote.length}");
+    _log("_SendPortDb: Size of remoteToPort: ${remoteToPort.length}");
+    _log("_SendPortDb: Size of portToRemote: ${portToRemote.length}");
   }
   
   static getRemoteSendPort(SendPort sp) {
