@@ -5,7 +5,7 @@ class _SendPortDb {
   static Map<SendPort,_RemoteSendPort> portToRemote = new Map();
   
   static add(SendPort sp, _RemoteSendPort rsp) {
-    _log("_SendPortDb: add add(${sp.toString()}, ");
+    _log("_SendPortDb: add(${sp.toString()}, ");
     _log("     ID: ${rsp.id}");
     _log("     NodeAdress: ${rsp.node})");
     
