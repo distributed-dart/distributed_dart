@@ -252,7 +252,7 @@ class _DartCodeDb {
     }).then((var origNode) {
       _log("Got all dependencies for $filePath");
       
-      if (origNode.name.endsWith(".distdartdeps")) {
+      if (origNode is _FileNode && origNode.name.endsWith(".distdartdeps")) {
         _log("File is a .distdartdeps file so we just return it.");
         return origNode;
       }
@@ -278,11 +278,13 @@ class _DartCodeDb {
                   
                   origNode._dependencies = newDependencies;
                   return origNode;
-                } else {
+                } else if (origNode is _FileNode) {
                   _log("Convert original FileNode to DependencyNode.");
                   
                   return new _DependencyNode(origNode.filePath, 
                                             origNode.fileHash, [node]);
+                } else {
+                  _err("origNode is not _DependencyNode or _FileNode");
                 }
               });
         } else {
