@@ -54,11 +54,11 @@ class _Network {
   /// outging data is encoded, and sent via the shared socket
   _outgoing(Socket socket){
     _sc.stream
-    .transform(new _DataConverter(new JsonEncoder()))
-    .transform(new _JsonLogger("outgoing json"))
-    .transform(new _DataConverter(new Utf8Encoder()))
-    .transform(new _DataConverter(new ZLibEncoder()))
-    .transform(new _ByteListEncoder())
+    .transform(_dataConverter(new JsonEncoder()))
+    .transform(_jsonLogger("outgoing json"))
+    .transform(_dataConverter(new Utf8Encoder()))
+    .transform(_dataConverter(new ZLibEncoder()))
+    .transform(_byteListEncoder())
     .listen(socket.add);
   }
 
@@ -66,22 +66,19 @@ class _Network {
   static _incomming(Socket socket){
     _log("new incomming connection");
     socket
-    .transform(new _ByteListDecoder())
-    .transform(new _DataConverter(new ZLibDecoder()))
-    .transform(new _DataConverter(new Utf8Decoder(allowMalformed: false)))
-    .transform(new _JsonLogger("incomming json"))
-    .transform(new _DataConverter(new JsonDecoder(null)))
+    .transform(_byteListDecoder())
+    .transform(_dataConverter(new ZLibDecoder()))
+    .transform(_dataConverter(new Utf8Decoder(allowMalformed: false)))
+    .transform(_jsonLogger("incomming json"))
+    .transform(_dataConverter(new JsonDecoder(null)))
     .listen(_RequestHandler.notify);
   }
 }
 
-class _JsonLogger extends StreamEventTransformer<String, String> {
-  final String name;
-  
-  _JsonLogger(this.name);
-  
-  void handleData(String data, EventSink<String> sink){
-    _log("$name: $data");
-    sink.add(data);
-  }
+StreamTransformer<String, String> _jsonLogger(final String name) {
+  return new StreamTransformer.fromHandlers(
+      handleData: (String data, EventSink<String> sink) {
+        _log("$name: $data");
+        sink.add(data);
+  });
 }

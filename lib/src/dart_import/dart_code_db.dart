@@ -178,7 +178,7 @@ class _DartCodeDb {
         
         return new Stream.fromIterable([bytes]).transform(UTF8.decoder)
           .transform(new LineSplitter())
-          .transform(new StreamTransformer<String, Future<_FileNode>>(
+          .transform(new StreamTransformer.fromHandlers(
             handleData: (String depUri, EventSink<Future<_FileNode>> sink) {
               String depUriTrim = depUri.trim();
               
